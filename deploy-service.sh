@@ -7,13 +7,16 @@ COMPOSE_FILE="$SCRIPT_DIR/docker-compose.prod.yaml"
 ENV_FILE="$SCRIPT_DIR/.env.prod"
 LOCK_FILE="$SCRIPT_DIR/.deploy.lock"
 HEALTH_TIMEOUT_SECONDS=${HEALTH_TIMEOUT_SECONDS:-120}
+DOCKERHUB_USERNAME=${DOCKERHUB_USERNAME:-jhjhkkk}
+DOCKERHUB_TOKEN_PARAMETER=${DOCKERHUB_TOKEN_PARAMETER:-/hobbyloop/production/dockerhub-read-token}
+BACKEND_IMAGE=${BACKEND_IMAGE:-jhjhkkk/hobbyloop-backend:latest}
 
 usage() {
-    echo "Usage: $0 <backend|frontend>" >&2
+    echo "Usage: $0 <backend|frontend> [image-ref]" >&2
     exit 2
 }
 
-if [ "$#" -ne 1 ]; then
+if [ "$#" -lt 1 ] || [ "$#" -gt 2 ]; then
     usage
 fi
 
@@ -21,17 +24,20 @@ SERVICE=$1
 
 case "$SERVICE" in
     backend)
-        IMAGE_REF="jhjhkkk/hobbyloop-backend:latest"
+        IMAGE_REF=${2:-$BACKEND_IMAGE}
+        BACKEND_IMAGE=$IMAGE_REF
         ROLLBACK_REF="jhjhkkk/hobbyloop-backend:rollback"
         ;;
     frontend)
-        IMAGE_REF="jhjhkkk/hobbyloop-frontend:latest"
+        IMAGE_REF=${2:-jhjhkkk/hobbyloop-frontend:latest}
         ROLLBACK_REF="jhjhkkk/hobbyloop-frontend:rollback"
         ;;
     *)
         usage
         ;;
 esac
+
+export BACKEND_IMAGE
 
 if [ ! -f "$COMPOSE_FILE" ]; then
     echo "Compose file not found: $COMPOSE_FILE" >&2
@@ -53,6 +59,37 @@ flock 9
 
 compose() {
     docker compose --env-file "$ENV_FILE" -f "$COMPOSE_FILE" "$@"
+}
+
+dockerhub_login() {
+    if ! command -v aws >/dev/null 2>&1; then
+        echo "AWS CLI is required on the EC2 host." >&2
+        return 1
+    fi
+
+    if ! DOCKERHUB_TOKEN=$(aws ssm get-parameter \
+        --name "$DOCKERHUB_TOKEN_PARAMETER" \
+        --with-decryption \
+        --query 'Parameter.Value' \
+        --output text \
+        --no-cli-pager); then
+        echo "Could not read the Docker Hub token from Parameter Store." >&2
+        return 1
+    fi
+
+    if [ -z "$DOCKERHUB_TOKEN" ] || [ "$DOCKERHUB_TOKEN" = "None" ]; then
+        echo "Docker Hub token parameter is empty." >&2
+        unset DOCKERHUB_TOKEN
+        return 1
+    fi
+
+    if ! printf '%s' "$DOCKERHUB_TOKEN" \
+        | docker login --username "$DOCKERHUB_USERNAME" --password-stdin; then
+        unset DOCKERHUB_TOKEN
+        return 1
+    fi
+
+    unset DOCKERHUB_TOKEN
 }
 
 container_health() {
@@ -115,6 +152,8 @@ if [ -n "$CURRENT_CONTAINER_ID" ]; then
     docker image tag "$CURRENT_IMAGE_ID" "$ROLLBACK_REF"
     HAS_ROLLBACK=true
 fi
+
+dockerhub_login
 
 echo "Pulling $IMAGE_REF."
 compose pull "$SERVICE"

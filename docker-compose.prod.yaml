@@ -1,6 +1,6 @@
 services:
   backend:
-    image: jhjhkkk/hobbyloop-backend:latest
+    image: ${BACKEND_IMAGE:-jhjhkkk/hobbyloop-backend:latest}
     container_name: hobbyloop-backend
     restart: unless-stopped
 
