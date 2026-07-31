@@ -2,7 +2,6 @@ package com.example.spring_rest_api.user;
 
 import com.example.spring_rest_api.authorization.service.request.LoginRequest;
 import com.example.spring_rest_api.authorization.service.response.LoginResponse;
-import com.example.spring_rest_api.common.property.UploadProperties;
 import com.example.spring_rest_api.common.response.ApiResponse;
 import com.example.spring_rest_api.image.service.response.ImageFileUploadResponse;
 import com.example.spring_rest_api.user.repository.UserRepository;
@@ -19,7 +18,6 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.http.MediaType;
 import org.springframework.mock.web.MockMultipartFile;
-import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
@@ -40,7 +38,6 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 @SpringBootTest
 @AutoConfigureMockMvc
-@ActiveProfiles("test")
 @Transactional
 public class UserE2ETest {
     @Autowired
@@ -49,8 +46,6 @@ public class UserE2ETest {
     private ObjectMapper objectMapper;
     @Autowired
     private UserRepository userRepository;
-    @Autowired
-    private UploadProperties uploadProperties;
 
     private static final Path TEST_UPLOAD_ROOT = createTestUploadDirectory();
 
@@ -64,7 +59,7 @@ public class UserE2ETest {
 
     @DynamicPropertySource
     static void configureUploadDirectory(DynamicPropertyRegistry registry) {
-        registry.add("app.upload.root", () -> TEST_UPLOAD_ROOT.toString());
+        registry.add("app.upload.root", TEST_UPLOAD_ROOT::toString);
     }
 
     @BeforeEach

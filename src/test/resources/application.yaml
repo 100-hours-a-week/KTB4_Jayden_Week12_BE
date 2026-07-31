@@ -1,0 +1,13 @@
+spring:
+  profiles:
+    default:
+      - test
+      - test-h2
+
+  servlet:
+    multipart:
+      max-file-size: 10MB
+      max-request-size: 100MB
+
+server:
+  shutdown: graceful

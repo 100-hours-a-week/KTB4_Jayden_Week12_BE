@@ -1,4 +1,4 @@
-CREATE TABLE image_files (
+CREATE TABLE IF NOT EXISTS  image_files (
                              id BIGINT NOT NULL AUTO_INCREMENT,
                              file_path VARCHAR(2048) NULL,
                              file_category VARCHAR(50) NOT NULL,
@@ -11,7 +11,7 @@ CREATE TABLE image_files (
   COLLATE = utf8mb4_unicode_ci;
 
 
-CREATE TABLE `users` (
+CREATE TABLE IF NOT EXISTS  `users` (
                          `user_id` BIGINT NOT NULL AUTO_INCREMENT,
                          `email` VARCHAR(255) NOT NULL,
                          `password` VARCHAR(255) NOT NULL,
@@ -35,7 +35,7 @@ CREATE TABLE `users` (
   COLLATE = utf8mb4_unicode_ci;
 
 
-CREATE TABLE `articles` (
+CREATE TABLE IF NOT EXISTS  `articles` (
                             `article_id` BIGINT NOT NULL AUTO_INCREMENT,
                             `user_id` BIGINT NOT NULL,
                             `title` VARCHAR(26) NOT NULL,
@@ -57,7 +57,7 @@ CREATE TABLE `articles` (
   COLLATE = utf8mb4_unicode_ci;
 
 
-CREATE TABLE `article_update_history` (
+CREATE TABLE IF NOT EXISTS  `article_update_history` (
                                           `article_history_id` BIGINT NOT NULL AUTO_INCREMENT,
                                           `article_id` BIGINT NOT NULL,
                                           `title` VARCHAR(26) NOT NULL,
@@ -76,7 +76,7 @@ CREATE TABLE `article_update_history` (
   COLLATE = utf8mb4_unicode_ci;
 
 
-CREATE TABLE `comments` (
+CREATE TABLE IF NOT EXISTS  `comments` (
                             `comment_id` BIGINT NOT NULL AUTO_INCREMENT,
                             `article_id` BIGINT NOT NULL,
                             `user_id` BIGINT NOT NULL,
@@ -105,7 +105,7 @@ CREATE TABLE `comments` (
   COLLATE = utf8mb4_unicode_ci;
 
 
-CREATE TABLE `temp_articles` (
+CREATE TABLE IF NOT EXISTS  `temp_articles` (
                                  `user_id` BIGINT NOT NULL,
                                  `title` VARCHAR(26) NULL,
                                  `content` MEDIUMTEXT NOT NULL,
@@ -124,7 +124,7 @@ CREATE TABLE `temp_articles` (
   COLLATE = utf8mb4_unicode_ci;
 
 
-CREATE TABLE `article_reports` (
+CREATE TABLE IF NOT EXISTS  `article_reports` (
                                    `report_id` BIGINT NOT NULL AUTO_INCREMENT,
                                    `article_id` BIGINT NOT NULL,
                                    `user_id` BIGINT NOT NULL,
@@ -150,7 +150,7 @@ CREATE TABLE `article_reports` (
   COLLATE = utf8mb4_unicode_ci;
 
 
-CREATE TABLE `article_likes` (
+CREATE TABLE IF NOT EXISTS  `article_likes` (
                                  `article_like_id` BIGINT NOT NULL AUTO_INCREMENT,
                                  `article_id` BIGINT NOT NULL,
                                  `user_id` BIGINT NOT NULL,
@@ -173,7 +173,7 @@ CREATE TABLE `article_likes` (
   COLLATE = utf8mb4_unicode_ci;
 
 
-CREATE TABLE `article_views` (
+CREATE TABLE IF NOT EXISTS  `article_views` (
                                  `article_view_id` BIGINT NOT NULL AUTO_INCREMENT,
                                  `article_id` BIGINT NOT NULL,
                                  `user_id` BIGINT NOT NULL,
@@ -198,7 +198,7 @@ CREATE TABLE `article_views` (
   COLLATE = utf8mb4_unicode_ci;
 
 
-CREATE TABLE `article_stats` (
+CREATE TABLE IF NOT EXISTS  `article_stats` (
                                  `article_id` BIGINT NOT NULL,
                                  `comment_count` BIGINT NOT NULL DEFAULT 0,
                                  `article_like_count` BIGINT NOT NULL DEFAULT 0,
@@ -228,7 +228,7 @@ CREATE TABLE refresh_token (
   COLLATE = utf8mb4_unicode_ci;
 
 
-CREATE TABLE chat_rooms (
+CREATE TABLE IF NOT EXISTS  chat_rooms (
                             chat_room_id BIGINT NOT NULL AUTO_INCREMENT,
                             created_at DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
 
@@ -267,7 +267,7 @@ CREATE TABLE chat_messages (
   COLLATE = utf8mb4_unicode_ci;
 
 
-CREATE TABLE chat_room_members (
+CREATE TABLE IF NOT EXISTS  chat_room_members (
                                    chat_room_member_id BIGINT NOT NULL AUTO_INCREMENT,
                                    chat_room_id BIGINT NOT NULL,
                                    user_id BIGINT NOT NULL,

@@ -1,4 +1,4 @@
-CREATE TABLE image_files (
+CREATE TABLE IF NOT EXISTS image_files (
                              id BIGINT NOT NULL AUTO_INCREMENT,
                              file_path VARCHAR(2048),
                              file_category VARCHAR(50) NOT NULL,
@@ -8,7 +8,7 @@ CREATE TABLE image_files (
                              CONSTRAINT pk_image_files PRIMARY KEY (id)
 );
 
-CREATE TABLE `users` (
+CREATE TABLE IF NOT EXISTS `users` (
                          `user_id`	bigint	NOT NULL AUTO_INCREMENT,
                          `email`	varchar(255)	NOT NULL,
                          `password`	varchar(255)	NOT NULL,
@@ -28,7 +28,7 @@ CREATE TABLE `users` (
                          CONSTRAINT fk_users_profile_image FOREIGN KEY (image_file_id) REFERENCES image_files (id)
 );
 
-CREATE TABLE `articles` (
+CREATE TABLE IF NOT EXISTS `articles` (
                             `article_id`	bigint	NOT NULL AUTO_INCREMENT,
                             `user_id`	bigint	NOT NULL,
                             `title`	varchar(26)	NOT NULL,
@@ -46,7 +46,7 @@ CREATE TABLE `articles` (
                                     REFERENCES `users` (`user_id`)
 );
 
-CREATE TABLE `article_update_history` (
+CREATE TABLE IF NOT EXISTS `article_update_history` (
                                           `article_history_id`	bigint	NOT NULL AUTO_INCREMENT,
                                           `article_id`	bigint	NOT NULL,
                                           `title`	varchar(26)	NOT NULL,
@@ -61,7 +61,7 @@ CREATE TABLE `article_update_history` (
                                                   REFERENCES `articles` (`article_id`)
 );
 
-CREATE TABLE `comments` (
+CREATE TABLE IF NOT EXISTS `comments` (
                             `comment_id`	bigint	NOT NULL AUTO_INCREMENT,
                             `article_id`	bigint	NOT NULL,
                             `user_id`	bigint	NOT NULL,
@@ -86,7 +86,7 @@ CREATE TABLE `comments` (
                                     REFERENCES `comments` (`comment_id`)
 );
 
-CREATE TABLE `temp_articles` (
+CREATE TABLE IF NOT EXISTS `temp_articles` (
                                  `user_id`	bigint	NOT NULL,
                                  `title`	varchar(26)	NULL,
                                  `content`	mediumtext	NOT NULL,
@@ -100,7 +100,7 @@ CREATE TABLE `temp_articles` (
                                          REFERENCES `users` (`user_id`)
 );
 
-CREATE TABLE `article_reports` (
+CREATE TABLE IF NOT EXISTS  `article_reports` (
                                    `report_id`	bigint	NOT NULL AUTO_INCREMENT,
                                    `article_id`	bigint	NOT NULL,
                                    `user_id`	bigint	NOT NULL,
@@ -123,7 +123,7 @@ CREATE TABLE `article_reports` (
                                        UNIQUE (`article_id`, `user_id`)
 );
 
-CREATE TABLE `article_likes` (
+CREATE TABLE IF NOT EXISTS  `article_likes` (
                                  `article_like_id`	bigint	NOT NULL AUTO_INCREMENT,
                                  `article_id`	bigint	NOT NULL,
                                  `user_id`	bigint	NOT NULL,
@@ -143,7 +143,7 @@ CREATE TABLE `article_likes` (
                                      UNIQUE (`article_id`, `user_id`)
 );
 
-CREATE TABLE `article_views` (
+CREATE TABLE IF NOT EXISTS  `article_views` (
                                  `article_view_id`	bigint	NOT NULL AUTO_INCREMENT,
                                  `article_id`	bigint	NOT NULL,
                                  `user_id`	bigint	NOT NULL,
@@ -163,7 +163,7 @@ CREATE TABLE `article_views` (
                                      UNIQUE (`article_id`, `user_id`)
 );
 
-CREATE TABLE `article_stats` (
+CREATE TABLE IF NOT EXISTS  `article_stats` (
                                  `article_id`	bigint	NOT NULL,
                                  `comment_count`	bigint	NOT NULL	DEFAULT 0,
                                  `article_like_count`	bigint	NOT NULL	DEFAULT 0,
@@ -177,7 +177,7 @@ CREATE TABLE `article_stats` (
                                          REFERENCES `articles` (`article_id`)
 );
 
-CREATE TABLE refresh_token (
+CREATE TABLE IF NOT EXISTS  refresh_token (
                                id BIGINT NOT NULL AUTO_INCREMENT,
                                token VARCHAR(255) NOT NULL,
                                user_id BIGINT NOT NULL,
@@ -188,7 +188,7 @@ CREATE TABLE refresh_token (
 );
 
 
-CREATE TABLE chat_rooms (
+CREATE TABLE IF NOT EXISTS  chat_rooms (
                             chat_room_id BIGINT NOT NULL AUTO_INCREMENT,
                             created_at TIMESTAMP NOT NULL,
 
@@ -196,7 +196,7 @@ CREATE TABLE chat_rooms (
                                 PRIMARY KEY (chat_room_id)
 );
 
-CREATE TABLE chat_messages (
+CREATE TABLE IF NOT EXISTS  chat_messages (
                                chat_message_id BIGINT NOT NULL AUTO_INCREMENT,
                                chat_room_id BIGINT NOT NULL,
                                sender_id BIGINT NOT NULL,
@@ -222,7 +222,7 @@ CREATE TABLE chat_messages (
                                        ON DELETE RESTRICT
 );
 
-CREATE TABLE chat_room_members (
+CREATE TABLE IF NOT EXISTS  chat_room_members (
                                    chat_room_member_id BIGINT NOT NULL AUTO_INCREMENT,
                                    chat_room_id BIGINT NOT NULL,
                                    user_id BIGINT NOT NULL,
