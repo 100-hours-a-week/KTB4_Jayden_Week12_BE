@@ -104,6 +104,9 @@ jobs:
       contents: read
 
     steps:
+      - name: Checkout deployment files
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@acca2b1b2070338fb9fd1ca27ecee81d687e58e5 # v6.1.2
         with:
@@ -123,9 +126,49 @@ jobs:
         run: |
           set -euo pipefail
 
+          commands='[]'
+
+          append_command() {
+            commands=$(jq -cn \
+              --argjson commands "$commands" \
+              --arg command "$1" \
+              '$commands + [$command]')
+          }
+
+          append_file_if_missing() {
+            local source_path=$1
+            local target_path=$2
+            local mode=$3
+            local payload_variable=$4
+
+            append_command "if [ ! -f '$target_path' ]; then"
+            append_command "$payload_variable=\$(mktemp)"
+
+            while IFS= read -r chunk; do
+              append_command "printf '%s' '$chunk' >> \"\$$payload_variable\""
+            done < <(base64 < "$source_path" | tr -d '\n' | fold -w 3000)
+
+            append_command "base64 -d \"\$$payload_variable\" > '${target_path}.tmp'"
+            append_command "install -m '$mode' '${target_path}.tmp' '$target_path'"
+            append_command "rm -f \"\$$payload_variable\" '${target_path}.tmp'"
+            append_command "fi"
+          }
+
+          append_command 'set -eu'
+          append_command "if [ ! -d '/opt/hobbyloop' ]; then install -d -m 755 '/opt/hobbyloop'; fi"
+          append_file_if_missing deploy-service.sh /opt/hobbyloop/deploy-service.sh 755 deploy_script_payload
+          append_file_if_missing docker-compose.prod.yaml /opt/hobbyloop/docker-compose.prod.yaml 644 compose_payload
+          append_command "cd /opt/hobbyloop && ./deploy-service.sh backend '$IMAGE_REF'"
+
+          largest_command=$(jq '[.[] | length] | max' <<< "$commands")
+          if [ "$largest_command" -gt 3500 ]; then
+            echo "Generated SSM command exceeds the safe command size." >&2
+            exit 1
+          fi
+
           parameters=$(jq -cn \
-            --arg command "cd /opt/hobbyloop && ./deploy-service.sh backend $IMAGE_REF" \
-            '{commands: [$command]}')
+            --argjson commands "$commands" \
+            '{commands: $commands, executionTimeout: ["300"]}')
 
           command_id=$(aws ssm send-command \
             --instance-ids "$EC2_INSTANCE_ID" \
