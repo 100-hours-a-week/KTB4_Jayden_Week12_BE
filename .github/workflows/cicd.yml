@@ -101,6 +101,7 @@ jobs:
 
     permissions:
       id-token: write
+      contents: read
 
     steps:
       - name: Configure AWS credentials
@@ -110,6 +111,9 @@ jobs:
           aws-region: ${{ vars.AWS_REGION }}
           role-session-name: github-actions-${{ github.run_id }}
           mask-aws-account-id: true
+
+      - name: Verify AWS identity
+        run: aws sts get-caller-identity
 
       - name: Send deployment command
         id: send-command
