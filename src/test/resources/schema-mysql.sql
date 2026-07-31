@@ -215,7 +215,7 @@ CREATE TABLE IF NOT EXISTS  `article_stats` (
   COLLATE = utf8mb4_unicode_ci;
 
 
-CREATE TABLE refresh_token (
+CREATE TABLE  IF NOT EXISTS refresh_token (
                                id BIGINT NOT NULL AUTO_INCREMENT,
                                token VARCHAR(255) NOT NULL,
                                user_id BIGINT NOT NULL,
@@ -238,7 +238,7 @@ CREATE TABLE IF NOT EXISTS  chat_rooms (
   COLLATE = utf8mb4_unicode_ci;
 
 
-CREATE TABLE chat_messages (
+CREATE TABLE  IF NOT EXISTS chat_messages (
                                chat_message_id BIGINT NOT NULL AUTO_INCREMENT,
                                chat_room_id BIGINT NOT NULL,
                                sender_id BIGINT NOT NULL,
