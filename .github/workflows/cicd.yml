@@ -144,11 +144,11 @@ jobs:
             append_command "if [ ! -f '$target_path' ]; then"
             append_command "$payload_variable=\$(mktemp)"
 
-            while IFS= read -r chunk; do
+            while IFS= read -r chunk || [ -n "$chunk" ]; do
               append_command "printf '%s' '$chunk' >> \"\$$payload_variable\""
             done < <(base64 < "$source_path" | tr -d '\n' | fold -w 3000)
 
-            append_command "base64 -d \"\$$payload_variable\" > '${target_path}.tmp'"
+            append_command "base64 -d < \"\$$payload_variable\" > '${target_path}.tmp'"
             append_command "install -m '$mode' '${target_path}.tmp' '$target_path'"
             append_command "rm -f \"\$$payload_variable\" '${target_path}.tmp'"
             append_command "fi"
@@ -156,8 +156,10 @@ jobs:
 
           append_command 'set -eu'
           append_command "if [ ! -d '/opt/hobbyloop' ]; then install -d -m 755 '/opt/hobbyloop'; fi"
+          append_command "if [ -f '/opt/hobbyloop/deploy-service.sh' ] && ! sh -n '/opt/hobbyloop/deploy-service.sh' 2>/dev/null; then echo 'Replacing invalid deploy-service.sh.'; rm -f '/opt/hobbyloop/deploy-service.sh'; fi"
           append_file_if_missing deploy-service.sh /opt/hobbyloop/deploy-service.sh 755 deploy_script_payload
           append_file_if_missing docker-compose.prod.yaml /opt/hobbyloop/docker-compose.prod.yaml 644 compose_payload
+          append_command "sh -n '/opt/hobbyloop/deploy-service.sh'"
           append_command "cd /opt/hobbyloop && ./deploy-service.sh backend '$IMAGE_REF'"
 
           largest_command=$(jq '[.[] | length] | max' <<< "$commands")
