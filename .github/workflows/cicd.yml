@@ -135,13 +135,12 @@ jobs:
               '$commands + [$command]')
           }
 
-          append_file_if_missing() {
+          append_file() {
             local source_path=$1
             local target_path=$2
             local mode=$3
             local payload_variable=$4
 
-            append_command "if [ ! -f '$target_path' ]; then"
             append_command "$payload_variable=\$(mktemp)"
 
             while IFS= read -r chunk || [ -n "$chunk" ]; do
@@ -151,14 +150,12 @@ jobs:
             append_command "base64 -d < \"\$$payload_variable\" > '${target_path}.tmp'"
             append_command "install -m '$mode' '${target_path}.tmp' '$target_path'"
             append_command "rm -f \"\$$payload_variable\" '${target_path}.tmp'"
-            append_command "fi"
           }
 
           append_command 'set -eu'
           append_command "if [ ! -d '/opt/hobbyloop' ]; then install -d -m 755 '/opt/hobbyloop'; fi"
-          append_command "if [ -f '/opt/hobbyloop/deploy-service.sh' ] && ! sh -n '/opt/hobbyloop/deploy-service.sh' 2>/dev/null; then echo 'Replacing invalid deploy-service.sh.'; rm -f '/opt/hobbyloop/deploy-service.sh'; fi"
-          append_file_if_missing deploy-service.sh /opt/hobbyloop/deploy-service.sh 755 deploy_script_payload
-          append_file_if_missing docker-compose.prod.yaml /opt/hobbyloop/docker-compose.prod.yaml 644 compose_payload
+          append_file deploy-service.sh /opt/hobbyloop/deploy-service.sh 755 deploy_script_payload
+          append_file docker-compose.prod.yaml /opt/hobbyloop/docker-compose.prod.yaml 644 compose_payload
           append_command "sh -n '/opt/hobbyloop/deploy-service.sh'"
           append_command "cd /opt/hobbyloop && ./deploy-service.sh backend '$IMAGE_REF'"
 

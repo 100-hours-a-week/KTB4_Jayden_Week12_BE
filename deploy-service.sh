@@ -10,6 +10,7 @@ HEALTH_TIMEOUT_SECONDS=${HEALTH_TIMEOUT_SECONDS:-120}
 DOCKERHUB_USERNAME=${DOCKERHUB_USERNAME:-jhjhkkk}
 DOCKERHUB_TOKEN_PARAMETER=${DOCKERHUB_TOKEN_PARAMETER:-/hobbyloop/production/dockerhub-read-token}
 BACKEND_IMAGE=${BACKEND_IMAGE:-jhjhkkk/hobbyloop-backend:latest}
+FRONTEND_IMAGE=${FRONTEND_IMAGE:-jhjhkkk/hobbyloop-frontend:latest}
 
 usage() {
     echo "Usage: $0 <backend|frontend> [image-ref]" >&2
@@ -29,7 +30,8 @@ case "$SERVICE" in
         ROLLBACK_REF="jhjhkkk/hobbyloop-backend:rollback"
         ;;
     frontend)
-        IMAGE_REF=${2:-jhjhkkk/hobbyloop-frontend:latest}
+        IMAGE_REF=${2:-$FRONTEND_IMAGE}
+        FRONTEND_IMAGE=$IMAGE_REF
         ROLLBACK_REF="jhjhkkk/hobbyloop-frontend:rollback"
         ;;
     *)
@@ -37,7 +39,7 @@ case "$SERVICE" in
         ;;
 esac
 
-export BACKEND_IMAGE
+export BACKEND_IMAGE FRONTEND_IMAGE
 
 if [ ! -f "$COMPOSE_FILE" ]; then
     echo "Compose file not found: $COMPOSE_FILE" >&2

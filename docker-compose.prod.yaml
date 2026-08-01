@@ -24,7 +24,7 @@ services:
       - app-network
 
   frontend:
-    image: jhjhkkk/hobbyloop-frontend:latest
+    image: ${FRONTEND_IMAGE:-jhjhkkk/hobbyloop-frontend:latest}
     container_name: hobbyloop-frontend
 
     depends_on:
