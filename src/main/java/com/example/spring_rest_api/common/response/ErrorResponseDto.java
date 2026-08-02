@@ -1,4 +1,4 @@
-package com.example.spring_rest_api.common.exception;
+package com.example.spring_rest_api.common.response;
 
 import lombok.Getter;
 import lombok.ToString;

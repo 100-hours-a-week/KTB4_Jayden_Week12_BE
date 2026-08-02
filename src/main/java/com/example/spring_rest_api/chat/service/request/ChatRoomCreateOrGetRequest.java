@@ -5,6 +5,6 @@ import lombok.NoArgsConstructor;
 
 @Getter
 @NoArgsConstructor
-public class ChatRoomCreateRequest {
+public class ChatRoomCreateOrGetRequest {
     private Long opponentId;
 }

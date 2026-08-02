@@ -1,38 +1,90 @@
 package com.example.spring_rest_api.chat.controller;
 
+import com.example.spring_rest_api.chat.service.ChatMessageService;
 import com.example.spring_rest_api.chat.service.ChatRoomService;
-import com.example.spring_rest_api.chat.service.request.ChatRoomCreateRequest;
-import com.example.spring_rest_api.chat.service.response.ChatRoomResponse;
+import com.example.spring_rest_api.chat.service.request.ChatRoomCreateOrGetRequest;
+import com.example.spring_rest_api.chat.service.response.ChatMessagesResponse;
+import com.example.spring_rest_api.chat.service.response.ChatRoomCreateOrGetResponse;
+import com.example.spring_rest_api.chat.service.response.ChatRoomInfoResponse;
+import com.example.spring_rest_api.chat.service.response.ChatRoomListResponse;
 import com.example.spring_rest_api.common.response.ApiResponse;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
+
+import java.time.LocalDateTime;
+import java.util.List;
 
 @RestController
 @RequiredArgsConstructor
 public class ChatRoomController {
     private final ChatRoomService chatRoomService;
+    private final ChatMessageService chatMessageService;
 
-    @PostMapping("/chatromms/direct")
-    public ResponseEntity<ApiResponse<ChatRoomResponse>> CreateOrGetChatRoom(
-            @RequestBody ChatRoomCreateRequest request,
+    @PostMapping("/chatrooms/direct")
+    public ResponseEntity<ApiResponse<ChatRoomCreateOrGetResponse>> CreateOrGetChatRoom(
+            @RequestBody ChatRoomCreateOrGetRequest request,
             @AuthenticationPrincipal Long userId
-
     ) {
-        boolean isSaved = chatRoomService.findRoom(userId, request);
-        ChatRoomResponse response = isSaved ?
-                chatRoomService.getChatRoom(userId, request) :
-                chatRoomService.createChatRoom(userId, request);
+        ChatRoomCreateOrGetResponse response = chatRoomService.createOrGetDirectRoom(userId, request);
 
-
-        return ResponseEntity.ok()
-                .body(ApiResponse.of(
+        return response.isCreated() ?
+                ResponseEntity.status(HttpStatus.CREATED)
+                        .body(ApiResponse.of(
+                                "chat_room_created",
+                                response
+                        )) :
+                ResponseEntity.ok(ApiResponse.of(
                         "chat_room_read_success",
                         response
                 ));
+    }
 
+    @GetMapping("/chatrooms/{roomId}")
+    public ResponseEntity<ApiResponse<ChatRoomInfoResponse>> readChatRoomInfo(
+            @AuthenticationPrincipal Long userId,
+            @PathVariable Long roomId
+    ) {
+        return ResponseEntity.ok(ApiResponse.of(
+                "chat_room_info_read_success",
+                ChatRoomService.readInfo(userId, roomId)
+        ));
+    }
+
+    @GetMapping("/chatrooms")
+    public ResponseEntity<ApiResponse<ChatRoomListResponse>> readChatRoomInfo(
+            @AuthenticationPrincipal Long userId,
+            @RequestParam(required = false) LocalDateTime createdAtCursor,
+            @RequestParam Long pageSize
+            ) {
+        return ResponseEntity.ok(ApiResponse.of(
+                "chat_room_list_read_success",
+                ChatRoomService.readInfiniteScroll(userId, createdAtCursor, pageSize)
+        ));
+    }
+
+    @GetMapping("/chatrooms/{roomId}/messages")
+    public ResponseEntity<ApiResponse<List<ChatMessagesResponse>>> readChatRoomMessages(
+            @AuthenticationPrincipal Long userId,
+            @PathVariable Long roomId,
+            @RequestParam(required = false) Long lastMessageId,
+            @RequestParam Long pageSize
+    ) {
+        return ResponseEntity.ok(ApiResponse.of(
+                "messages_read_success",
+                chatMessageService.readMessages(userId, roomId, lastMessageId, pageSize)
+        ));
+    }
+
+    @GetMapping("/chatrooms/unread-count")
+    public ResponseEntity<ApiResponse<Long>> readUnreadCount(
+            @AuthenticationPrincipal Long userId
+    ) {
+        return ResponseEntity.ok(ApiResponse.of(
+                "unread_count_load_success",
+                chatMessageService.countUnreadMessages(userId)
+        ));
     }
 }

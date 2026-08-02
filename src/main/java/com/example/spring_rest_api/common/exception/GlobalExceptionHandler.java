@@ -1,5 +1,6 @@
 package com.example.spring_rest_api.common.exception;
 
+import com.example.spring_rest_api.common.response.ErrorResponseDto;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;

@@ -1,9 +1,13 @@
 package com.example.spring_rest_api.chat.service;
 
 import com.example.spring_rest_api.chat.entity.ChatRoom;
+import com.example.spring_rest_api.chat.entity.ChatRoomMember;
+import com.example.spring_rest_api.chat.repository.ChatRoomMemberRepository;
 import com.example.spring_rest_api.chat.repository.ChatRoomRepository;
-import com.example.spring_rest_api.chat.service.request.ChatRoomCreateRequest;
-import com.example.spring_rest_api.chat.service.response.ChatRoomResponse;
+import com.example.spring_rest_api.chat.service.request.ChatRoomCreateOrGetRequest;
+import com.example.spring_rest_api.chat.service.response.ChatRoomCreateOrGetResponse;
+import com.example.spring_rest_api.chat.service.response.ChatRoomInfoResponse;
+import com.example.spring_rest_api.chat.service.response.ChatRoomListResponse;
 import com.example.spring_rest_api.common.exception.NotFoundException;
 import com.example.spring_rest_api.user.entity.User;
 import com.example.spring_rest_api.user.repository.UserQueryRepository;
@@ -12,17 +16,24 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
+
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
 public class ChatRoomService {
     private final ChatRoomRepository chatRoomRepository;
+    private final ChatRoomMemberRepository memberRepository;
     private final UserRepository userRepository;
     private final UserQueryRepository userQueryRepository;
 
+    public static ChatRoomListResponse readInfiniteScroll(Long userId, LocalDateTime createdAtCursor, Long pageSize) {
+        return null;
+    }
+
     @Transactional
-    public ChatRoomResponse createOrGetDirectRoom(Long userId, ChatRoomCreateRequest request) {
-        userRepository.findById(userId)
+    public ChatRoomCreateOrGetResponse createOrGetDirectRoom(Long userId, ChatRoomCreateOrGetRequest request) {
+        User requestUser = userRepository.findById(userId)
                 .filter(u -> u.getDeletedAt() == null)
                 .orElseThrow(() -> new NotFoundException("USER_NOT_FOUND"));
 
@@ -32,14 +43,17 @@ public class ChatRoomService {
 
         String directKey = generateDirectKey(userId, opponentUser.getUserId());
 
-        ChatRoom room = chatRoomRepository.findByDirectKey(directKey)
-                .orElseGet(() -> createRoom(userId, opponentUser.getUserId(), directKey));
-
-        return ChatRoomResponse.from(
-                room,
-                opponentUser
-        );
+        return chatRoomRepository.findByDirectKey(directKey)
+                .map(r -> ChatRoomCreateOrGetResponse.find(r, opponentUser))
+                .orElseGet(() -> createRoom(requestUser, opponentUser, directKey));
     }
+
+    public static ChatRoomInfoResponse readInfo(Long userId, Long roomId) {
+        return null;
+    }
+
+
+
 
     private String generateDirectKey(Long userId, Long opponentUserId) {
         return userId < opponentUserId ?
@@ -47,7 +61,17 @@ public class ChatRoomService {
                 String.format("%s:%s", opponentUserId, userId);
     }
 
-    private ChatRoom createRoom(Long userId, Long opponentUserId, String directKey) {
-        return chatRoomRepository.save(ChatRoom.createDirect(userId, opponentUserId, directKey));
+    private ChatRoomCreateOrGetResponse createRoom(User requestUser, User opponentUser, String directKey) {
+        ChatRoom room = chatRoomRepository.save(ChatRoom.createDirect(
+                requestUser.getUserId(),
+                opponentUser.getUserId(),
+                directKey
+        ));
+
+        memberRepository.save(ChatRoomMember.addMember(room, requestUser));
+        memberRepository.save(ChatRoomMember.addMember(room, opponentUser));
+
+        return ChatRoomCreateOrGetResponse.create(room,  opponentUser);
+
     }
 }
