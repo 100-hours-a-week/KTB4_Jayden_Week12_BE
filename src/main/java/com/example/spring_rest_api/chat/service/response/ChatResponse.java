@@ -1,5 +1,6 @@
 package com.example.spring_rest_api.chat.service.response;
 
+import com.example.spring_rest_api.chat.entity.ChatMessage;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
@@ -10,29 +11,21 @@ import java.time.LocalDateTime;
 public class ChatResponse {
     private Long chatMessageId;
     private Long userId;
-    private String nickname;
-    private String profileImageUrl;
-    private Long roomId;
     private String content;
+    private String chatType;
     private LocalDateTime createdAt;
+    private LocalDateTime updatedAt;
+    private LocalDateTime deletedAt;
 
-    public static ChatResponse from(
-            Long chatMessageId,
-            Long userId,
-            String nickname,
-            String profileImageUrl,
-            Long roomId,
-            String content,
-            LocalDateTime createdAt
-    ) {
+    public static ChatResponse from(ChatMessage message) {
         ChatResponse response = new ChatResponse();
-        response.chatMessageId = chatMessageId;
-        response.userId = userId;
-        response.nickname = nickname;
-        response.profileImageUrl = profileImageUrl;
-        response.roomId = roomId;
-        response.content = content;
-        response.createdAt = createdAt;
+        response.chatMessageId = message.getChatMessageId();
+        response.userId = message.getSender().getUserId();
+        response.content = message.getContent();
+        response.chatType = message.getChatType().toString();
+        response.createdAt = message.getCreatedAt();
+        response.updatedAt = message.getUpdatedAt();
+        response.deletedAt = message.getDeletedAt();
         return response;
     }
 }

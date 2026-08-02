@@ -1,5 +1,6 @@
 package com.example.spring_rest_api.chat.entity;
 
+import com.example.spring_rest_api.common.exception.BadRequestException;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Getter;
@@ -19,14 +20,26 @@ public class ChatRoom {
     private Long chatRoomId;
     private LocalDateTime createdAt;
 
+    @Enumerated(EnumType.STRING)
+    private RoomType roomType;
+
+    private String directKey = "00:00";
+
     @OneToMany(mappedBy = "chatRoom", fetch = FetchType.LAZY, cascade = CascadeType.PERSIST)
     private List<ChatRoomMember> chatRoomMembers = new ArrayList<>();
 
     @OneToMany(mappedBy = "chatRoom", fetch = FetchType.LAZY)
     private List<ChatMessage> chatMessages = new ArrayList<>();
 
-    public static ChatRoom create() {
+
+    public static ChatRoom createDirect(Long userIdOne, Long userIdAnother, String directKey) {
+        if (userIdOne.equals(userIdAnother)) {
+            throw new BadRequestException("자기 자신과 채팅방을 만들 수 없습니다.");
+        }
+
         ChatRoom chatRoom = new ChatRoom();
+        chatRoom.roomType = RoomType.DIRECT;
+        chatRoom.directKey = directKey;
         chatRoom.createdAt = LocalDateTime.now();
         return chatRoom;
     }

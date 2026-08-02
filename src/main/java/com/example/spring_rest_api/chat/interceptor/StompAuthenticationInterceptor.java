@@ -18,7 +18,7 @@ import java.util.List;
 
 @Component
 @RequiredArgsConstructor
-public class StompAuthInterceptor implements ChannelInterceptor {
+public class StompAuthenticationInterceptor implements ChannelInterceptor {
     private final JwtProvider jwtProvider;
 
     @Override

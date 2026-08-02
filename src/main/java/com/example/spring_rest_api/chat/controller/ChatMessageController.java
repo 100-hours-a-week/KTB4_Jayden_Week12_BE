@@ -1,5 +1,6 @@
 package com.example.spring_rest_api.chat.controller;
 
+import com.example.spring_rest_api.chat.service.ChatRoomAuthorizationService;
 import com.example.spring_rest_api.chat.service.ChatService;
 import com.example.spring_rest_api.chat.service.request.ChatRequest;
 import com.example.spring_rest_api.chat.service.response.ChatResponse;
@@ -17,6 +18,7 @@ import java.security.Principal;
 public class ChatMessageController {
     private final ChatService chatService;
     private final SimpMessagingTemplate messagingTemplate;
+    private final ChatRoomAuthorizationService chatRoomAuthorizationService;
 
     @MessageMapping("/chatrooms/{roomId}/messages")
     public void sendText(
@@ -32,5 +34,4 @@ public class ChatMessageController {
                 response
         );
     }
-
 }
