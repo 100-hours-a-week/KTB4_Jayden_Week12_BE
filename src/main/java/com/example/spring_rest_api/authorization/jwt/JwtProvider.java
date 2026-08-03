@@ -1,5 +1,7 @@
 package com.example.spring_rest_api.authorization.jwt;
 
+import com.example.spring_rest_api.chat.principal.StompPrincipal;
+import com.example.spring_rest_api.common.exception.BadRequestException;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jws;
 import io.jsonwebtoken.Jwts;
@@ -75,5 +77,18 @@ public class JwtProvider {
 
     public Long getAccessTokenValidityInMilliseconds() {
         return jwtProperties.getAccessTokenExpSeconds() * 1000;
+    }
+
+    public StompPrincipal verifyAccessToken(String token) {
+        Claims claims = parse(token).getPayload();
+
+        if (!"access".equals(claims.get("type", String.class))) {
+            throw new BadRequestException("INVALID_ACCESS_TOKEN");
+        }
+
+        return new StompPrincipal(
+                Long.valueOf(claims.getSubject()),
+                claims.getExpiration().toInstant()
+        );
     }
 }
