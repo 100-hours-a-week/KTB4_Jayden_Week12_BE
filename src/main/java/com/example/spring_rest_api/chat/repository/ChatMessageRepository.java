@@ -28,6 +28,21 @@ public interface ChatMessageRepository extends JpaRepository<ChatMessage, Long> 
     """)
     Long countUnreadAll(Long userId);
 
+    @Query("""
+        select count(message)
+        from ChatMessage message
+        join ChatRoomMember member
+            on member.chatRoom = message.chatRoom and member.user.userId = :userId
+        where message.chatRoom.chatRoomId = :roomId
+            and message.deletedAt is null
+            and message.sender.userId <> :userId
+            and (
+                member.lastReadMessage is null
+                    or message.chatMessageId > member.lastReadMessage.chatMessageId
+            )
+    """)
+    Long countUnreadByRoomIdAndUserId(Long roomId, Long userId);
+
     Optional<ChatMessage> findTopByChatRoom_ChatRoomIdOrderByIdDesc(Long roomId);
 
     @Query("""
