@@ -231,8 +231,12 @@ CREATE TABLE  IF NOT EXISTS refresh_token (
 CREATE TABLE IF NOT EXISTS  chat_rooms (
                             chat_room_id BIGINT NOT NULL AUTO_INCREMENT,
                             created_at DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
+                            room_type VARCHAR(20) NOT NULL,
+                            direct_key VARCHAR(40) NOT NULL,
 
-                            CONSTRAINT pk_chat_rooms PRIMARY KEY (chat_room_id)
+                            CONSTRAINT pk_chat_rooms PRIMARY KEY (chat_room_id),
+
+                            CONSTRAINT uk_direct_key UNIQUE (direct_key)
 ) ENGINE = InnoDB
   DEFAULT CHARACTER SET = utf8mb4
   COLLATE = utf8mb4_unicode_ci;
@@ -272,6 +276,8 @@ CREATE TABLE IF NOT EXISTS  chat_room_members (
                                    chat_room_id BIGINT NOT NULL,
                                    user_id BIGINT NOT NULL,
                                    last_read_message_id BIGINT NULL,
+                                   joined_at DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
+                                   left_at DATETIME(6),
 
                                    CONSTRAINT pk_chat_room_members
                                        PRIMARY KEY (chat_room_member_id),

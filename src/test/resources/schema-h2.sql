@@ -191,9 +191,13 @@ CREATE TABLE IF NOT EXISTS  refresh_token (
 CREATE TABLE IF NOT EXISTS  chat_rooms (
                             chat_room_id BIGINT NOT NULL AUTO_INCREMENT,
                             created_at TIMESTAMP NOT NULL,
+                            room_type VARCHAR(20) NOT NULL,
+                            direct_key VARCHAR(40) NOT NULL,
 
                             CONSTRAINT pk_chat_rooms
-                                PRIMARY KEY (chat_room_id)
+                                PRIMARY KEY (chat_room_id),
+
+                            CONSTRAINT uk_direct_key UNIQUE (direct_key)
 );
 
 CREATE TABLE IF NOT EXISTS  chat_messages (
@@ -227,6 +231,8 @@ CREATE TABLE IF NOT EXISTS  chat_room_members (
                                    chat_room_id BIGINT NOT NULL,
                                    user_id BIGINT NOT NULL,
                                    last_read_message_id BIGINT,
+                                   joined_at TIMESTAMP NOT NULL,
+                                   left_at TIMESTAMP,
 
                                    CONSTRAINT pk_chat_room_members
                                        PRIMARY KEY (chat_room_member_id),
