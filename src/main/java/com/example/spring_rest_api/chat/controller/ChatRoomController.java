@@ -8,6 +8,7 @@ import com.example.spring_rest_api.chat.service.response.ChatRoomCreateOrGetResp
 import com.example.spring_rest_api.chat.service.response.ChatRoomInfoResponse;
 import com.example.spring_rest_api.chat.service.response.ChatRoomListResponse;
 import com.example.spring_rest_api.common.response.ApiResponse;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -25,7 +26,7 @@ public class ChatRoomController {
 
     @PostMapping("/chatrooms/direct")
     public ResponseEntity<ApiResponse<ChatRoomCreateOrGetResponse>> CreateOrGetChatRoom(
-            @RequestBody ChatRoomCreateOrGetRequest request,
+            @Valid @RequestBody ChatRoomCreateOrGetRequest request,
             @AuthenticationPrincipal Long userId
     ) {
         ChatRoomCreateOrGetResponse response = chatRoomService.createOrGetDirectRoom(userId, request);
@@ -49,7 +50,7 @@ public class ChatRoomController {
     ) {
         return ResponseEntity.ok(ApiResponse.of(
                 "chat_room_info_read_success",
-                ChatRoomService.readInfo(userId, roomId)
+                chatRoomService.readInfo(userId, roomId)
         ));
     }
 
@@ -61,7 +62,7 @@ public class ChatRoomController {
             ) {
         return ResponseEntity.ok(ApiResponse.of(
                 "chat_room_list_read_success",
-                ChatRoomService.readInfiniteScroll(userId, createdAtCursor, pageSize)
+                chatRoomService.readInfiniteScroll(userId, createdAtCursor, pageSize)
         ));
     }
 
@@ -85,6 +86,17 @@ public class ChatRoomController {
         return ResponseEntity.ok(ApiResponse.of(
                 "unread_count_load_success",
                 chatMessageService.countUnreadMessages(userId)
+        ));
+    }
+
+    @DeleteMapping("/chatrooms/{roomId}/users/me")
+    public ResponseEntity<ApiResponse<Long>> deleteChatRoom(
+            @AuthenticationPrincipal Long userId,
+            @PathVariable Long roomId
+    ) {
+        return ResponseEntity.ok(ApiResponse.of(
+                "chat_room_delete_success",
+                chatRoomService.delete(userId, roomId)
         ));
     }
 }

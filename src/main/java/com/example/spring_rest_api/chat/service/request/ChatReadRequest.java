@@ -7,8 +7,9 @@ import lombok.NoArgsConstructor;
 
 @Getter
 @NoArgsConstructor
-public class ChatRoomCreateOrGetRequest {
+public class ChatReadRequest {
     @NotNull
     @Positive
-    private Long opponentId;
+    private Long lastReadMessageId;
+
 }

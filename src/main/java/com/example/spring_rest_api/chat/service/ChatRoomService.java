@@ -27,10 +27,6 @@ public class ChatRoomService {
     private final UserRepository userRepository;
     private final UserQueryRepository userQueryRepository;
 
-    public static ChatRoomListResponse readInfiniteScroll(Long userId, LocalDateTime createdAtCursor, Long pageSize) {
-        return null;
-    }
-
     @Transactional
     public ChatRoomCreateOrGetResponse createOrGetDirectRoom(Long userId, ChatRoomCreateOrGetRequest request) {
         User requestUser = userRepository.findById(userId)
@@ -48,7 +44,15 @@ public class ChatRoomService {
                 .orElseGet(() -> createRoom(requestUser, opponentUser, directKey));
     }
 
-    public static ChatRoomInfoResponse readInfo(Long userId, Long roomId) {
+    public ChatRoomInfoResponse readInfo(Long userId, Long roomId) {
+        return null;
+    }
+
+    public ChatRoomListResponse readInfiniteScroll(Long userId, LocalDateTime createdAtCursor, Long pageSize) {
+        return null;
+    }
+
+    public Long delete(Long userId, Long roomId) {
         return null;
     }
 

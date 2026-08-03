@@ -21,7 +21,7 @@ public class ChatRoom {
     private LocalDateTime createdAt;
 
     @Enumerated(EnumType.STRING)
-    private RoomType roomType;
+    private RoomType roomType; //TODO - DB ALTER TABLE
 
     private String directKey = "00:00"; //TODO - 유니크 제약조건
 
