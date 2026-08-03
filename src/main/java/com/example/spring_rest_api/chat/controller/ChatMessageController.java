@@ -35,7 +35,7 @@ public class ChatMessageController {
         ChatResponse response = chatService.sendText(senderId, roomId, request);
 
         messagingTemplate.convertAndSend(
-                "ROOM_DESTINATION" + roomId,
+                ROOM_DESTINATION + roomId,
                 response
         );
 
