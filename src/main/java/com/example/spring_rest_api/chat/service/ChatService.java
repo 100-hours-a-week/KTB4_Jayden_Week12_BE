@@ -88,6 +88,6 @@ public class ChatService {
             return null;
         }
 
-        return ChatReadResponse.updated(readerId, roomId, message.getChatMessageId());
+        return ChatReadResponse.updated(roomId, readerId, message.getChatMessageId());
     }
 }
