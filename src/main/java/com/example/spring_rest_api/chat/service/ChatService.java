@@ -56,7 +56,7 @@ public class ChatService {
 
     @Transactional
     public void publishMessageUpdate(Long roomId, ChatResponse response) {
-        List<Long> userIds = memberRepository.findUserIdsByRoomId(roomId);
+        List<Long> userIds = memberRepository.findUser_UserIdsByChatRoom_ChatRoomId(roomId);
 
         userIds.forEach(userId -> {
             Long unreadCount = messageRepository.countUnreadByRoomIdAndUserId(roomId, userId);
@@ -78,7 +78,7 @@ public class ChatService {
 
     @Transactional
     public ChatReadResponse markAsRead(Long readerId, Long roomId, Long lastReadMessageId) {
-        ChatRoomMember member = memberRepository.findByRoomIdAndUserIdForUpdate(roomId, readerId)
+        ChatRoomMember member = memberRepository.findByChatRoomIdAndUserIdForUpdate(roomId, readerId)
                 .orElseThrow(() -> new ForbiddenException("USER_ACCESS_DENIED"));
 
         ChatMessage message = messageRepository.findByChatMessageIdAndChatRoom_ChatRoomId(lastReadMessageId, roomId)

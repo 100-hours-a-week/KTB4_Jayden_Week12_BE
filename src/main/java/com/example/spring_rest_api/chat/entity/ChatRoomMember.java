@@ -31,7 +31,7 @@ public class ChatRoomMember {
     @JoinColumn(name = "last_read_message_id")
     private ChatMessage lastReadMessage;
 
-    private LocalDateTime joinedAt; //TODO - DB ALTER TABLE
+    private LocalDateTime joinedAt;
     private LocalDateTime leftAt;
 
     public static ChatRoomMember addMember(ChatRoom chatRoom, User user) {

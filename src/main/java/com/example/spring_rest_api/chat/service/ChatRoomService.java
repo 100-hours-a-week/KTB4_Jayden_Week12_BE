@@ -63,7 +63,7 @@ public class ChatRoomService {
         ChatRoom room = chatRoomRepository.findById(roomId)
                 .orElseThrow(() -> new NotFoundException("ROOM_NOT_FOUND"));
 
-        List<Long> userIds = memberRepository.findUserIdsByRoomId(roomId);
+        List<Long> userIds = memberRepository.findUser_UserIdsByChatRoom_ChatRoomId(roomId);
         Long opponentUserId = userIds.stream().filter(l -> !l.equals(userId))
                 .findFirst()
                 .orElseThrow(() -> new NotFoundException("OPPONENT_USERID_NOT_FOUND"));
@@ -72,7 +72,7 @@ public class ChatRoomService {
                 .filter(u -> u.getDeletedAt() == null)
                 .orElseThrow(() -> new NotFoundException("OPPONENT_USER_NOT_FOUND"));
 
-        ChatMessage lastMessage = messageRepository.findTopByChatRoom_ChatRoomIdOrderByIdDesc(roomId)
+        ChatMessage lastMessage = messageRepository.findTopByChatRoom_ChatRoomIdOrderByChatMessageIdDesc(roomId)
                 .orElse(null);
 
         return ChatRoomInfoResponse.from(

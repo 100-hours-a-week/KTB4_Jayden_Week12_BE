@@ -21,9 +21,9 @@ public class ChatRoom {
     private LocalDateTime createdAt;
 
     @Enumerated(EnumType.STRING)
-    private RoomType roomType; //TODO - DB ALTER TABLE
+    private RoomType roomType;
 
-    private String directKey = "00:00"; //TODO - 유니크 제약조건
+    private String directKey = "00:00";
 
     @OneToMany(mappedBy = "chatRoom", fetch = FetchType.LAZY, cascade = CascadeType.PERSIST)
     private List<ChatRoomMember> chatRoomMembers = new ArrayList<>();

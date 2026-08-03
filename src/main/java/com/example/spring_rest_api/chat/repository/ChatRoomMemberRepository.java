@@ -21,7 +21,7 @@ public interface ChatRoomMemberRepository extends JpaRepository<ChatRoomMember, 
         from ChatRoomMember member
         where member.chatRoom.chatRoomId = :roomId
     """)
-    List<Long> findUserIdsByRoomId(Long roomId);
+    List<Long> findUser_UserIdsByChatRoom_ChatRoomId(Long chatRoomId);
 
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("""
@@ -30,7 +30,7 @@ public interface ChatRoomMemberRepository extends JpaRepository<ChatRoomMember, 
         where member.chatRoom.chatRoomId = :roomId
             and member.user.userId = :userId
     """)
-    Optional<ChatRoomMember> findByRoomIdAndUserIdForUpdate(Long roomId, Long userId);
+    Optional<ChatRoomMember> findByChatRoomIdAndUserIdForUpdate(Long roomId, Long userId);
 
     @Query("""
         select new com.example.spring_rest_api.chat.service.response.ChatRoomListResponse(
@@ -71,8 +71,8 @@ public interface ChatRoomMemberRepository extends JpaRepository<ChatRoomMember, 
             on unreadMessage.chatRoom = room
             and unreadMessage.sender.userId <> :userId
             and (
-                me.lastReadMessageId is null
-                or unreadMessage.chatMessageId > me.lastReadMessageId
+                me.lastReadMessage is null
+                or unreadMessage.chatMessageId > me.lastReadMessage.chatMessageId
             )
 
         where me.user.userId = :userId

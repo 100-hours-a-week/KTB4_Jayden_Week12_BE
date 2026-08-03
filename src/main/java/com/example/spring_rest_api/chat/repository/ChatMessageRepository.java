@@ -43,7 +43,7 @@ public interface ChatMessageRepository extends JpaRepository<ChatMessage, Long> 
     """)
     Long countUnreadByRoomIdAndUserId(Long roomId, Long userId);
 
-    Optional<ChatMessage> findTopByChatRoom_ChatRoomIdOrderByIdDesc(Long roomId);
+    Optional<ChatMessage> findTopByChatRoom_ChatRoomIdOrderByChatMessageIdDesc(Long chatRoomId);
 
     @Query("""
         select message
