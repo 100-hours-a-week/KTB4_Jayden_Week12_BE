@@ -10,6 +10,7 @@ import com.example.spring_rest_api.chat.service.response.ChatRoomListResponse;
 import com.example.spring_rest_api.common.response.ApiResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -55,14 +56,14 @@ public class ChatRoomController {
     }
 
     @GetMapping("/chatrooms")
-    public ResponseEntity<ApiResponse<ChatRoomListResponse>> readChatRoomInfo(
+    public ResponseEntity<ApiResponse<List<ChatRoomListResponse>>> readChatRoomInfiniteScroll(
             @AuthenticationPrincipal Long userId,
-            @RequestParam(required = false) LocalDateTime createdAtCursor,
-            @RequestParam Long pageSize
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime createdAtCursor,
+            @RequestParam int pageSize
             ) {
         return ResponseEntity.ok(ApiResponse.of(
                 "chat_room_list_read_success",
-                chatRoomService.readInfiniteScroll(userId, createdAtCursor, pageSize)
+                chatRoomService.readAllInfiniteScroll(userId, createdAtCursor, pageSize)
         ));
     }
 
@@ -71,11 +72,11 @@ public class ChatRoomController {
             @AuthenticationPrincipal Long userId,
             @PathVariable Long roomId,
             @RequestParam(required = false) Long lastMessageId,
-            @RequestParam Long pageSize
+            @RequestParam int pageSize
     ) {
         return ResponseEntity.ok(ApiResponse.of(
                 "messages_read_success",
-                chatMessageService.readMessages(userId, roomId, lastMessageId, pageSize)
+                chatMessageService.readMessagesInfiniteScroll(userId, roomId, lastMessageId, pageSize)
         ));
     }
 

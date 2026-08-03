@@ -10,13 +10,17 @@ import java.util.List;
 @Service
 @RequiredArgsConstructor
 public class ChatMessageService {
-    private final ChatMessageRepository chatMessageRepository;
+    private final ChatMessageRepository messageRepository;
+    private final ChatRoomAuthorizationService roomAuthorizationService;
 
-    public List<ChatMessagesResponse> readMessages(Long userId, Long roomId, Long lastMessageId, Long pageSize) {
-        return null;
+    public List<ChatMessagesResponse> readMessagesInfiniteScroll(Long userId, Long roomId, Long lastMessageId, int pageSize) {
+        roomAuthorizationService.validateParticipant(roomId, userId);
+        return messageRepository.findAllInfiniteScroll(roomId, lastMessageId, pageSize).stream()
+                .map(ChatMessagesResponse::from)
+                .toList().reversed();
     }
 
     public Long countUnreadMessages(Long userId) {
-        return null;
+        return messageRepository.countUnreadAll(userId);
     }
 }

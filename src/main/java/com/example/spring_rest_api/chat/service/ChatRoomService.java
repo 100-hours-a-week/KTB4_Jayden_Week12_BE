@@ -1,7 +1,9 @@
 package com.example.spring_rest_api.chat.service;
 
+import com.example.spring_rest_api.chat.entity.ChatMessage;
 import com.example.spring_rest_api.chat.entity.ChatRoom;
 import com.example.spring_rest_api.chat.entity.ChatRoomMember;
+import com.example.spring_rest_api.chat.repository.ChatMessageRepository;
 import com.example.spring_rest_api.chat.repository.ChatRoomMemberRepository;
 import com.example.spring_rest_api.chat.repository.ChatRoomRepository;
 import com.example.spring_rest_api.chat.service.request.ChatRoomCreateOrGetRequest;
@@ -17,6 +19,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.List;
+import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
@@ -24,6 +28,8 @@ import java.time.LocalDateTime;
 public class ChatRoomService {
     private final ChatRoomRepository chatRoomRepository;
     private final ChatRoomMemberRepository memberRepository;
+    private final ChatMessageRepository messageRepository;
+    private final ChatRoomAuthorizationService roomAuthorizationService;
     private final UserRepository userRepository;
     private final UserQueryRepository userQueryRepository;
 
@@ -38,22 +44,59 @@ public class ChatRoomService {
                 .orElseThrow(() -> new NotFoundException("OPPONENT_USER_NOT_FOUND"));
 
         String directKey = generateDirectKey(userId, opponentUser.getUserId());
+        Optional<ChatRoom> roomOptional = chatRoomRepository.findByDirectKey(directKey);
 
-        return chatRoomRepository.findByDirectKey(directKey)
+        memberRepository.findByChatRoom_ChatRoomIdAndUser_userId(
+                roomOptional.map(ChatRoom::getChatRoomId).orElseThrow(),
+                request.getOpponentId()
+        )
+                .ifPresent(ChatRoomMember::rejoin);
+
+        return roomOptional
                 .map(r -> ChatRoomCreateOrGetResponse.find(r, opponentUser))
                 .orElseGet(() -> createRoom(requestUser, opponentUser, directKey));
     }
 
     public ChatRoomInfoResponse readInfo(Long userId, Long roomId) {
-        return null;
+        roomAuthorizationService.validateParticipant(roomId, userId);
+
+        ChatRoom room = chatRoomRepository.findById(roomId)
+                .orElseThrow(() -> new NotFoundException("ROOM_NOT_FOUND"));
+
+        List<Long> userIds = memberRepository.findUserIdsByRoomId(roomId);
+        Long opponentUserId = userIds.stream().filter(l -> !l.equals(userId))
+                .findFirst()
+                .orElseThrow(() -> new NotFoundException("OPPONENT_USERID_NOT_FOUND"));
+
+        User opponentUser = userQueryRepository.findByIdWithProfileImage(opponentUserId)
+                .filter(u -> u.getDeletedAt() == null)
+                .orElseThrow(() -> new NotFoundException("OPPONENT_USER_NOT_FOUND"));
+
+        ChatMessage lastMessage = messageRepository.findTopByChatRoom_ChatRoomIdOrderByIdDesc(roomId)
+                .orElse(null);
+
+        return ChatRoomInfoResponse.from(
+                room,
+                opponentUser,
+                lastMessage
+        );
     }
 
-    public ChatRoomListResponse readInfiniteScroll(Long userId, LocalDateTime createdAtCursor, Long pageSize) {
-        return null;
+    public List<ChatRoomListResponse> readAllInfiniteScroll(Long userId, LocalDateTime createdAtCursor, int pageSize) {
+        return memberRepository.findChatRoomInfiniteScroll(
+                userId,
+                createdAtCursor,
+                pageSize
+        );
     }
 
     public Long delete(Long userId, Long roomId) {
-        return null;
+        roomAuthorizationService.validateParticipant(roomId, userId);
+        ChatRoomMember member = memberRepository.findByChatRoom_ChatRoomIdAndUser_userId(roomId, userId)
+                .orElseThrow(() -> new NotFoundException("MEMBER_NOT_FOUND"));
+        member.leave();
+
+        return roomId;
     }
 
 

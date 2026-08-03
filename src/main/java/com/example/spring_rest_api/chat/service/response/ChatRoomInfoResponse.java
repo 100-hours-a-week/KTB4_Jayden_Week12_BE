@@ -16,10 +16,10 @@ public class ChatRoomInfoResponse {
     private Long opponentUserId;
     private String nickname;
     private String profileImageUrl;
-    private Long lastReadMessageId;
+    private Long lastMessageId;
     private LocalDateTime createdAt;
 
-    private static ChatRoomInfoResponse from(ChatRoom chatRoom, User opponentUser, ChatMessage message) {
+    public static ChatRoomInfoResponse from(ChatRoom chatRoom, User opponentUser, ChatMessage message) {
         ChatRoomInfoResponse response = new ChatRoomInfoResponse();
         response.chatRoomId = chatRoom.getChatRoomId();
         response.opponentUserId = opponentUser.getUserId();
@@ -27,8 +27,9 @@ public class ChatRoomInfoResponse {
         response.profileImageUrl = opponentUser.getProfileImage() == null ?
                 null :
                 ImageFileUtil.toFullUrl(opponentUser.getProfileImage().getFilePath());
-        response.lastReadMessageId = message.getChatMessageId();
-        response.createdAt = message.getCreatedAt();
+
+        response.lastMessageId = message == null ? null : message.getChatMessageId();
+        response.createdAt = message == null ? null : message.getCreatedAt();
         return  response;
     }
 }

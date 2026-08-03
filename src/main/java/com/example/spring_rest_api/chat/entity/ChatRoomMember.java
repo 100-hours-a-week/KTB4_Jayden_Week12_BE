@@ -54,10 +54,16 @@ public class ChatRoomMember {
     }
 
     public void leave() {
+        if (this.leftAt != null) {
+            return;
+        }
         this.leftAt = LocalDateTime.now();
     }
 
     public void rejoin() {
+        if (this.leftAt == null) {
+            return;
+        }
         this.joinedAt = LocalDateTime.now();
         this.leftAt = null;
         this.lastReadMessage = null;
@@ -70,6 +76,4 @@ public class ChatRoomMember {
             throw new BadRequestException("INVALID_UPDATE_REQUEST");
         }
     }
-
-
 }

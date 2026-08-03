@@ -18,7 +18,7 @@ public class ChatMessagesResponse {
     private LocalDateTime updatedAt;
     private LocalDateTime deletedAt;
 
-    public ChatMessagesResponse from(ChatMessage chatMessage) {
+    public static ChatMessagesResponse from(ChatMessage chatMessage) {
         ChatMessagesResponse response = new ChatMessagesResponse();
         response.messageId = chatMessage.getChatMessageId();
         response.senderId = chatMessage.getSender().getUserId();
