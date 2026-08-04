@@ -10,6 +10,7 @@ import java.time.LocalDateTime;
 @NoArgsConstructor
 public class ChatResponse {
     private Long chatMessageId;
+    private String clientMessageId;
     private Long userId;
     private String content;
     private String chatType;
@@ -20,6 +21,7 @@ public class ChatResponse {
     public static ChatResponse from(ChatMessage message) {
         ChatResponse response = new ChatResponse();
         response.chatMessageId = message.getChatMessageId();
+        response.clientMessageId = message.getClientMessageId();
         response.userId = message.getSender().getUserId();
         response.content = message.getContent();
         response.chatType = message.getChatType().toString();

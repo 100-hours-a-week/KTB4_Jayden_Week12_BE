@@ -18,6 +18,8 @@ public class ChatMessage {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long chatMessageId;
 
+    private String clientMessageId;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "chat_room_id")
     private ChatRoom chatRoom;
@@ -35,8 +37,9 @@ public class ChatMessage {
     private LocalDateTime updatedAt;
     private LocalDateTime deletedAt;
 
-    public static ChatMessage createTextMessage(ChatRoom chatRoom, User sender, String content) {
+    public static ChatMessage createTextMessage(ChatRoom chatRoom, User sender, String clientMessageId, String content) {
         ChatMessage message = new ChatMessage();
+        message.clientMessageId = clientMessageId;
         message.chatRoom = chatRoom;
         message.sender = sender;
         message.content = content;

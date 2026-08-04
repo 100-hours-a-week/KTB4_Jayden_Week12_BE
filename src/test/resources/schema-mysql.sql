@@ -244,6 +244,7 @@ CREATE TABLE IF NOT EXISTS  chat_rooms (
 
 CREATE TABLE  IF NOT EXISTS chat_messages (
                                chat_message_id BIGINT NOT NULL AUTO_INCREMENT,
+                               client_message_id VARCHAR(36) NOT NULL,
                                chat_room_id BIGINT NOT NULL,
                                sender_id BIGINT NOT NULL,
 
@@ -265,7 +266,10 @@ CREATE TABLE  IF NOT EXISTS chat_messages (
                                CONSTRAINT fk_chat_messages_sender
                                    FOREIGN KEY (sender_id)
                                        REFERENCES `users` (user_id)
-                                       ON DELETE RESTRICT
+                                       ON DELETE RESTRICT,
+
+                               CONSTRAINT `UK_CLIENT_MESSAGE_ID_SENDER_ID`
+                                   UNIQUE (`client_message_id`, `sender_id`)
 ) ENGINE = InnoDB
   DEFAULT CHARACTER SET = utf8mb4
   COLLATE = utf8mb4_unicode_ci;
