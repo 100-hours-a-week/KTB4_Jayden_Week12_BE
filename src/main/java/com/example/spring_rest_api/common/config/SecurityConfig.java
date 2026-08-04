@@ -37,7 +37,8 @@ public class SecurityConfig {
             "/auth/logout",
             "/auth/token/refresh",
             "/users/me/profile-image",
-            "/public/**"
+            "/public/**",
+            "/ws-chat"
     };
 
     @Bean
