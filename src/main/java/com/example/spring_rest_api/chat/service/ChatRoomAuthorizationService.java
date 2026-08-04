@@ -15,6 +15,7 @@ public class ChatRoomAuthorizationService {
     public void validateParticipant(Long chatRoomId, Long userId) {
         boolean isMember = chatRoomMemberRepository
                 .findByChatRoom_ChatRoomIdAndUser_userId(chatRoomId, userId)
+                .filter(m -> m.getLeftAt() == null)
                 .isPresent();
         if (!isMember) {
             throw new ForbiddenException("해당 채팅방에 접근할 권한이 없습니다.");

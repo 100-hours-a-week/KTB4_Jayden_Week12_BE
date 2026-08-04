@@ -46,14 +46,8 @@ public class ChatRoomService {
         String directKey = generateDirectKey(userId, opponentUser.getUserId());
         Optional<ChatRoom> roomOptional = chatRoomRepository.findByDirectKey(directKey);
 
-        memberRepository.findByChatRoom_ChatRoomIdAndUser_userId(
-                roomOptional.map(ChatRoom::getChatRoomId).orElseThrow(),
-                request.getOpponentId()
-        )
-                .ifPresent(ChatRoomMember::rejoin);
-
         return roomOptional
-                .map(r -> ChatRoomCreateOrGetResponse.find(r, opponentUser))
+                .map(r -> findRoom(r, opponentUser))
                 .orElseGet(() -> createRoom(requestUser, opponentUser, directKey));
     }
 
@@ -64,7 +58,8 @@ public class ChatRoomService {
                 .orElseThrow(() -> new NotFoundException("ROOM_NOT_FOUND"));
 
         List<Long> userIds = memberRepository.findUser_UserIdsByChatRoom_ChatRoomId(roomId);
-        Long opponentUserId = userIds.stream().filter(l -> !l.equals(userId))
+        Long opponentUserId = userIds.stream()
+                .filter(l -> !l.equals(userId))
                 .findFirst()
                 .orElseThrow(() -> new NotFoundException("OPPONENT_USERID_NOT_FOUND"));
 
@@ -82,14 +77,16 @@ public class ChatRoomService {
         );
     }
 
-    public List<ChatRoomListResponse> readAllInfiniteScroll(Long userId, LocalDateTime createdAtCursor, int pageSize) {
+    public List<ChatRoomListResponse> readAllInfiniteScroll(Long userId, LocalDateTime createdAtCursor, Long lastMessageId, int pageSize) {
         return memberRepository.findChatRoomInfiniteScroll(
                 userId,
                 createdAtCursor,
+                lastMessageId,
                 pageSize
         );
     }
 
+    @Transactional
     public Long delete(Long userId, Long roomId) {
         roomAuthorizationService.validateParticipant(roomId, userId);
         ChatRoomMember member = memberRepository.findByChatRoom_ChatRoomIdAndUser_userId(roomId, userId)
@@ -106,6 +103,17 @@ public class ChatRoomService {
         return userId < opponentUserId ?
                 String.format("%s:%s", userId, opponentUserId) :
                 String.format("%s:%s", opponentUserId, userId);
+    }
+
+    private ChatRoomCreateOrGetResponse findRoom(ChatRoom room, User opponentUser) {
+        memberRepository.findByChatRoom_ChatRoomIdAndUser_userId(
+                        room.getChatRoomId(),
+                        opponentUser.getUserId()
+                )
+                .filter(m -> m.getLeftAt() != null)
+                .ifPresent(ChatRoomMember::rejoin);
+
+        return ChatRoomCreateOrGetResponse.find(room, opponentUser);
     }
 
     private ChatRoomCreateOrGetResponse createRoom(User requestUser, User opponentUser, String directKey) {
