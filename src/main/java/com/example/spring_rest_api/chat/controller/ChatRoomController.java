@@ -59,11 +59,12 @@ public class ChatRoomController {
     public ResponseEntity<ApiResponse<List<ChatRoomListResponse>>> readChatRoomInfiniteScroll(
             @AuthenticationPrincipal Long userId,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime createdAtCursor,
+            @RequestParam(required = false) Long lastMessageId,
             @RequestParam int pageSize
             ) {
         return ResponseEntity.ok(ApiResponse.of(
                 "chat_room_list_read_success",
-                chatRoomService.readAllInfiniteScroll(userId, createdAtCursor, pageSize)
+                chatRoomService.readAllInfiniteScroll(userId, createdAtCursor, lastMessageId, pageSize)
         ));
     }
 

@@ -19,7 +19,7 @@ public interface ChatRoomMemberRepository extends JpaRepository<ChatRoomMember, 
     @Query("""
         select member.user.userId
         from ChatRoomMember member
-        where member.chatRoom.chatRoomId = :roomId
+        where member.chatRoom.chatRoomId = :chatRoomId
     """)
     List<Long> findUser_UserIdsByChatRoom_ChatRoomId(Long chatRoomId);
 
@@ -27,10 +27,10 @@ public interface ChatRoomMemberRepository extends JpaRepository<ChatRoomMember, 
     @Query("""
         select member
         from ChatRoomMember member
-        where member.chatRoom.chatRoomId = :roomId
+        where member.chatRoom.chatRoomId = :chatRoomId
             and member.user.userId = :userId
     """)
-    Optional<ChatRoomMember> findByChatRoomIdAndUserIdForUpdate(Long roomId, Long userId);
+    Optional<ChatRoomMember> findByChatRoomIdAndUserIdForUpdate(Long chatRoomId, Long userId);
 
     @Query("""
         select new com.example.spring_rest_api.chat.service.response.ChatRoomListResponse(
@@ -80,6 +80,10 @@ public interface ChatRoomMemberRepository extends JpaRepository<ChatRoomMember, 
             and (
                 :createdAtCursor is null
                 or lastMessage.createdAt < :createdAtCursor
+                or (
+                    lastMessage.createdAt = :createdAtCursor
+                    and lastMessage.chatMessageId < :lastMessageId
+                )
             )
 
         group by
@@ -96,5 +100,5 @@ public interface ChatRoomMemberRepository extends JpaRepository<ChatRoomMember, 
             lastMessage.chatMessageId desc
         limit :pageSize
         """)
-    List<ChatRoomListResponse> findChatRoomInfiniteScroll(Long userId, LocalDateTime createdAtCursor, int pageSize);
+    List<ChatRoomListResponse> findChatRoomInfiniteScroll(Long userId, LocalDateTime createdAtCursor, Long lastMessageId, int pageSize);
 }
