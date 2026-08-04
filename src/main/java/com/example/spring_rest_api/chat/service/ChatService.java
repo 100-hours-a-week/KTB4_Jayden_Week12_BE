@@ -48,6 +48,7 @@ public class ChatService {
         ChatMessage textMessage = ChatMessage.createTextMessage(
                 room,
                 user,
+                request.getClientMessageId(),
                 request.getContent()
         );
         ChatMessage saved = messageRepository.save(textMessage);
@@ -63,6 +64,7 @@ public class ChatService {
 
             ChatRoomUpdateResponse updateResponse = new ChatRoomUpdateResponse(
                     ChatUpdateType.MESSAGE_RECEIVED,
+                    response.getClientMessageId(),
                     roomId,
                     response.getChatMessageId(),
                     response.getUserId(),
@@ -79,6 +81,7 @@ public class ChatService {
     @Transactional
     public ChatReadResponse markAsRead(Long readerId, Long roomId, Long lastReadMessageId) {
         ChatRoomMember member = memberRepository.findByChatRoomIdAndUserIdForUpdate(roomId, readerId)
+                .filter(m -> m.getLeftAt() == null)
                 .orElseThrow(() -> new ForbiddenException("USER_ACCESS_DENIED"));
 
         ChatMessage message = messageRepository.findByChatMessageIdAndChatRoom_ChatRoomId(lastReadMessageId, roomId)
