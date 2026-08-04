@@ -43,7 +43,7 @@ app:
 decorator:
   datasource:
     p6spy:
-      enable-logging: true
+      enable-logging: false
       logging: slf4j
       multiline: true
 
