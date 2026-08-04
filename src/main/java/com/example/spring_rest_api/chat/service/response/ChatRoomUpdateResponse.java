@@ -10,11 +10,12 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 public class ChatRoomUpdateResponse {
     private ChatUpdateType chatUpdateType;
+    private String clientMessageId;
     private Long roomId;
     private Long messageId;
     private Long senderId;
     private String content;
     private ChatType chatType;
-    private LocalDateTime createdA;
+    private LocalDateTime createdAt;
     private Long unreadCount;
 }
