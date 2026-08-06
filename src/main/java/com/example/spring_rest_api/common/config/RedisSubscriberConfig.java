@@ -25,7 +25,7 @@ public class RedisSubscriberConfig {
                 new ChannelTopic("chat.message.v1")
         );
         container.addMessageListener(
-                messageSubscriber,
+                updateSubscriber,
                 new ChannelTopic("chat.user-update.v1")
         );
 
