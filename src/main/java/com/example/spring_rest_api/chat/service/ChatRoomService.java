@@ -47,7 +47,7 @@ public class ChatRoomService {
         Optional<ChatRoom> roomOptional = chatRoomRepository.findByDirectKey(directKey);
 
         return roomOptional
-                .map(r -> findRoom(r, opponentUser))
+                .map(r -> findRoom(r, requestUser))
                 .orElseGet(() -> createRoom(requestUser, opponentUser, directKey));
     }
 
@@ -105,15 +105,15 @@ public class ChatRoomService {
                 String.format("%s:%s", opponentUserId, userId);
     }
 
-    private ChatRoomCreateOrGetResponse findRoom(ChatRoom room, User opponentUser) {
+    private ChatRoomCreateOrGetResponse findRoom(ChatRoom room, User requestUser) {
         memberRepository.findByChatRoom_ChatRoomIdAndUser_userId(
                         room.getChatRoomId(),
-                        opponentUser.getUserId()
+                        requestUser.getUserId()
                 )
                 .filter(m -> m.getLeftAt() != null)
                 .ifPresent(ChatRoomMember::rejoin);
 
-        return ChatRoomCreateOrGetResponse.find(room, opponentUser);
+        return ChatRoomCreateOrGetResponse.find(room, requestUser);
     }
 
     private ChatRoomCreateOrGetResponse createRoom(User requestUser, User opponentUser, String directKey) {
