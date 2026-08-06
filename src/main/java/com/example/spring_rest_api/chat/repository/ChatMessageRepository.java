@@ -13,6 +13,8 @@ public interface ChatMessageRepository extends JpaRepository<ChatMessage, Long> 
 
     Optional<ChatMessage> findByChatMessageIdAndChatRoom_ChatRoomId(Long chatMessageId, Long chatRoomId);
 
+    Optional<ChatMessage> findBySender_UserIdAndClientMessageId(Long senderUserId, String clientMessageId);
+
     @Query("""
         select count(message)
         from ChatMessage message
