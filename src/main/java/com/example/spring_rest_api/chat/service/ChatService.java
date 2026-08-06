@@ -4,7 +4,8 @@ import com.example.spring_rest_api.chat.entity.ChatMessage;
 import com.example.spring_rest_api.chat.entity.ChatRoom;
 import com.example.spring_rest_api.chat.entity.ChatRoomMember;
 import com.example.spring_rest_api.chat.entity.ChatType;
-import com.example.spring_rest_api.chat.publisher.ChatUpdatePublisher;
+import com.example.spring_rest_api.chat.event.ChatMessageEvent;
+import com.example.spring_rest_api.chat.service.publisher.ChatUpdatePublisher;
 import com.example.spring_rest_api.chat.repository.ChatMessageRepository;
 import com.example.spring_rest_api.chat.repository.ChatRoomMemberRepository;
 import com.example.spring_rest_api.chat.repository.ChatRoomRepository;
@@ -18,6 +19,7 @@ import com.example.spring_rest_api.common.exception.NotFoundException;
 import com.example.spring_rest_api.user.entity.User;
 import com.example.spring_rest_api.user.repository.UserQueryRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -33,6 +35,7 @@ public class ChatService {
     private final UserQueryRepository userRepository;
     private final ChatRoomAuthorizationService chatRoomAuthorizationService;
     private final ChatUpdatePublisher updatePublisher;
+    private final ApplicationEventPublisher eventPublisher;
 
     @Transactional
     public ChatResponse sendText(Long senderId, Long roomId, ChatRequest request) {
@@ -45,17 +48,21 @@ public class ChatService {
                 .filter(u -> u.getDeletedAt() == null)
                 .orElseThrow(() -> new NotFoundException("USER_NOT_FOUND"));
 
-        ChatMessage textMessage = ChatMessage.createTextMessage(
-                room,
-                user,
-                request.getClientMessageId(),
-                request.getContent()
+        ChatMessage saved = messageRepository.save(
+                ChatMessage.createTextMessage(
+                        room,
+                        user,
+                        request.getClientMessageId(),
+                        request.getContent()
+                )
         );
-        ChatMessage saved = messageRepository.save(textMessage);
-        return ChatResponse.from(saved);
+        ChatResponse response = ChatResponse.from(saved);
+
+        eventPublisher.publishEvent(ChatMessageEvent.of(roomId, response));
+
+        return response;
     }
 
-    @Transactional
     public void publishMessageUpdate(Long roomId, ChatResponse response) {
         List<Long> userIds = memberRepository.findUser_UserIdsByChatRoom_ChatRoomId(roomId);
 

@@ -23,6 +23,15 @@ spring:
       hibernate:
         format_sql: true
 
+  data:
+    redis:
+      host: 127.0.0.1
+      port: 6379
+      password:
+      ssl:
+        enabled: false
+      timeout: 2000
+
 logging:
   level:
     root: INFO

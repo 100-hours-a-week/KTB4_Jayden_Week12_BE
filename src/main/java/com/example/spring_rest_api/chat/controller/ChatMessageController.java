@@ -32,13 +32,8 @@ public class ChatMessageController {
             Principal principal
     ) {
         Long senderId = Long.valueOf(principal.getName());
+
         ChatResponse response = chatService.sendText(senderId, roomId, request);
-
-        messagingTemplate.convertAndSend(
-                ROOM_DESTINATION + roomId,
-                response
-        );
-
         chatService.publishMessageUpdate(roomId, response);
     }
 

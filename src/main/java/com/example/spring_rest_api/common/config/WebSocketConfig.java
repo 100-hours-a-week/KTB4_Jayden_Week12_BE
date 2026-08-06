@@ -33,6 +33,8 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
         registry.setApplicationDestinationPrefixes("/pub");
         registry.enableSimpleBroker("/sub", "/queue");
         registry.setUserDestinationPrefix("/user");
+
+        registry.setPreservePublishOrder(true);
     }
 
     @Override
