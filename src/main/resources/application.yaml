@@ -12,3 +12,10 @@ spring:
 
 server:
   shutdown: graceful
+
+app:
+  outbox:
+    worker-id: ${HOSTNAME:${random.uuid}}
+    batch-size: 50
+    poll-delay-ms: 500
+    lock-timeout-seconds: 120
