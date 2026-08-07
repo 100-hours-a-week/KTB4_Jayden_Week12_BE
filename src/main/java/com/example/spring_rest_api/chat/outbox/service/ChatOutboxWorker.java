@@ -57,7 +57,7 @@ public class ChatOutboxWorker {
                     "Outbox 발행 성공 후 선점권이 만료되었습니다. " +
                             "outboxId = {}, eventId = {}, workerId = {}",
                     outbox.getOutboxId(),
-                    result.getAttemptsUsed(),
+                    outbox.getEventId(),
                     workerId
             );
         }
