@@ -44,6 +44,8 @@ public class ChatService {
     private final ObjectMapper objectMapper;
     private final ChatOutboxRepository outboxRepository;
 
+    private static final String MESSAGE_CHANNEL = "chat.message.v1";
+
     @Transactional
     public ChatResponse sendText(Long senderId, Long roomId, ChatRequest request) {
         String clientMessageId = request.getClientMessageId();
@@ -83,7 +85,7 @@ public class ChatService {
                 saved.getChatMessageId(),
                 saved.getChatMessageId(),
                 saved.getClientMessageId(),
-                "chat.message.v1",
+                MESSAGE_CHANNEL,
                 payload,
                 now
         );

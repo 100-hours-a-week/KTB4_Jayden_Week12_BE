@@ -15,14 +15,14 @@ public class ChatUpdatePublisher {
     private final StringRedisTemplate redisTemplate;
     private final ObjectMapper objectMapper;
 
-    private static final String CHANNEL = "chat.user-update.v1";
+    private static final String UPDATE_CHANNEL = "chat.user-update.v1";
 
     public void publish(Long userId, ChatRoomUpdateResponse response) {
         UserChatUpdateEvent event = UserChatUpdateEvent.of(userId, response);
 
         try {
             String payload = objectMapper.writeValueAsString(event);
-            redisTemplate.convertAndSend(CHANNEL, payload);
+            redisTemplate.convertAndSend(UPDATE_CHANNEL, payload);
 
         } catch (JsonProcessingException e) {
             throw new BadRequestException("JSON_PUBLISH_FAILED");
