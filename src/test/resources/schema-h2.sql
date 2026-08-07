@@ -259,3 +259,25 @@ CREATE TABLE IF NOT EXISTS  chat_room_members (
                                            REFERENCES chat_messages (chat_message_id)
                                            ON DELETE SET NULL
 );
+
+CREATE TABLE IF NOT EXISTS chat_outbox (
+                            outbox_id BIGINT NOT NULL AUTO_INCREMENT,
+                            event_id VARCHAR(255) NOT NULL,
+                            event_type VARCHAR(255) NOT NULL,
+                            aggregate_type VARCHAR(255) NOT NULL,
+                            aggregate_id BIGINT NOT NULL,
+                            message_id BIGINT NOT NULL,
+                            client_message_id VARCHAR(255) NOT NULL,
+                            channel VARCHAR(255) NOT NULL,
+                            payload CLOB NOT NULL,
+                            status VARCHAR(255) NOT NULL,
+                            attempt_count INTEGER NOT NULL,
+                            next_retry_at TIMESTAMP NOT NULL,
+                            locked_by VARCHAR(255),
+                            locked_at TIMESTAMP,
+                            published_at TIMESTAMP,
+                            last_error VARCHAR(1000),
+                            created_at TIMESTAMP NOT NULL,
+
+                            CONSTRAINT pk_chat_outbox PRIMARY KEY (outbox_id)
+);

@@ -306,3 +306,28 @@ CREATE TABLE IF NOT EXISTS  chat_room_members (
 ) ENGINE = InnoDB
   DEFAULT CHARACTER SET = utf8mb4
   COLLATE = utf8mb4_unicode_ci;
+
+
+CREATE TABLE IF NOT EXISTS chat_outbox (
+                            outbox_id BIGINT NOT NULL AUTO_INCREMENT,
+                            event_id VARCHAR(255) NOT NULL,
+                            event_type VARCHAR(255) NOT NULL,
+                            aggregate_type VARCHAR(255) NOT NULL,
+                            aggregate_id BIGINT NOT NULL,
+                            message_id BIGINT NOT NULL,
+                            client_message_id VARCHAR(255) NOT NULL,
+                            channel VARCHAR(255) NOT NULL,
+                            payload LONGTEXT NOT NULL,
+                            status VARCHAR(255) NOT NULL,
+                            attempt_count INT NOT NULL,
+                            next_retry_at DATETIME(6) NOT NULL,
+                            locked_by VARCHAR(255) NULL,
+                            locked_at DATETIME(6) NULL,
+                            published_at DATETIME(6) NULL,
+                            last_error VARCHAR(1000) NULL,
+                            created_at DATETIME(6) NOT NULL,
+
+                            CONSTRAINT pk_chat_outbox PRIMARY KEY (outbox_id)
+) ENGINE = InnoDB
+  DEFAULT CHARACTER SET = utf8mb4
+  COLLATE = utf8mb4_unicode_ci;
