@@ -53,7 +53,7 @@ public interface ChatRoomMemberRepository extends JpaRepository<ChatRoomMember, 
 
         left join opponent.user.profileImage profile
 
-        left join ChatMessage lastMessage
+        join ChatMessage lastMessage
             on lastMessage.chatRoom = room
             and not exists (
                 select 1
