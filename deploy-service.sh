@@ -122,6 +122,26 @@ wait_until_healthy() {
     return 1
 }
 
+ensure_redis() {
+    echo "Ensuring Redis is running."
+
+    if ! compose up -d --no-deps redis; then
+        echo "Redis container could not be started." >&2
+        return 1
+    fi
+
+    redis_container_id=$(compose ps -q redis)
+    if [ -z "$redis_container_id" ] || ! wait_until_healthy "$redis_container_id"; then
+        echo "Redis container did not become healthy." >&2
+        return 1
+    fi
+
+    if [ "$(docker exec "$redis_container_id" redis-cli ping 2>/dev/null || true)" != "PONG" ]; then
+        echo "Redis PING failed." >&2
+        return 1
+    fi
+}
+
 rollback() {
     if [ "$HAS_ROLLBACK" != "true" ]; then
         echo "Deployment failed and no previous image is available for rollback." >&2
@@ -156,6 +176,10 @@ if [ -n "$CURRENT_CONTAINER_ID" ]; then
 fi
 
 dockerhub_login
+
+if [ "$SERVICE" = "backend" ] && ! ensure_redis; then
+    exit 1
+fi
 
 echo "Pulling $IMAGE_REF."
 compose pull "$SERVICE"

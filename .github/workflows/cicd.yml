@@ -37,7 +37,7 @@ jobs:
           --health-retries=10
 
       redis:
-        image: redis:7.4-alpine
+        image: redis:7.4.10-alpine
         ports:
           - 6379:6379
         options:
@@ -64,6 +64,13 @@ jobs:
 
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@90ddb51e90a5fd9ba75f40cf85156b7b41bf76a3 # v6
+
+      - name: Verify Redis service
+        env:
+          REDIS_CONTAINER_ID: ${{ job.services.redis.id }}
+        run: |
+          set -euo pipefail
+          test "$(docker exec "$REDIS_CONTAINER_ID" redis-cli ping)" = "PONG"
 
       - name: Build and test
         run: ./gradlew clean build --no-daemon
