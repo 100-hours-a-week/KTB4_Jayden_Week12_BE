@@ -5,6 +5,7 @@ import com.example.spring_rest_api.common.exception.UnauthorizedException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.messaging.Message;
 import org.springframework.messaging.MessageChannel;
+import org.springframework.messaging.MessageDeliveryException;
 import org.springframework.messaging.simp.stomp.StompCommand;
 import org.springframework.messaging.simp.stomp.StompHeaderAccessor;
 import org.springframework.messaging.support.ChannelInterceptor;
@@ -53,6 +54,10 @@ public class StompAuthorizationInterceptor implements ChannelInterceptor {
 
     private Long extractChatRoomId(String destination) {
         String prefix = "/sub/chatrooms/";
-        return Long.valueOf(destination.substring(prefix.length()));
+        try {
+            return Long.valueOf(destination.substring(prefix.length()));
+        } catch (NumberFormatException e) {
+            throw new MessageDeliveryException("유효하지 않은 채팅방 구독 경로입니다.");
+        }
     }
 }
