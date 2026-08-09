@@ -268,8 +268,8 @@ CREATE TABLE  IF NOT EXISTS chat_messages (
                                        REFERENCES `users` (user_id)
                                        ON DELETE RESTRICT,
 
-                               CONSTRAINT `UK_CLIENT_MESSAGE_ID_SENDER_ID`
-                                   UNIQUE (`client_message_id`, `sender_id`)
+                               CONSTRAINT uk_chat_messages_room_sender_client
+                                   UNIQUE (chat_room_id, sender_id, client_message_id)
 ) ENGINE = InnoDB
   DEFAULT CHARACTER SET = utf8mb4
   COLLATE = utf8mb4_unicode_ci;

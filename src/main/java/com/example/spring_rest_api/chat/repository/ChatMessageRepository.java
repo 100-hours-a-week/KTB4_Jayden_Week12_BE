@@ -13,7 +13,11 @@ public interface ChatMessageRepository extends JpaRepository<ChatMessage, Long> 
 
     Optional<ChatMessage> findByChatMessageIdAndChatRoom_ChatRoomId(Long chatMessageId, Long chatRoomId);
 
-    Optional<ChatMessage> findBySender_UserIdAndClientMessageId(Long senderUserId, String clientMessageId);
+    Optional<ChatMessage> findBySender_UserIdAndChatRoom_ChatRoomIdAndClientMessageId(
+            Long senderUserId,
+            Long chatRoomId,
+            String clientMessageId
+    );
 
     @Query("""
         select count(message)
@@ -23,6 +27,7 @@ public interface ChatMessageRepository extends JpaRepository<ChatMessage, Long> 
         where
             message.deletedAt is null
             and message.sender.userId <> :userId
+            and member.leftAt is null
             and (
                 member.lastReadMessage is null
                     or message.chatMessageId > member.lastReadMessage.chatMessageId
@@ -38,6 +43,7 @@ public interface ChatMessageRepository extends JpaRepository<ChatMessage, Long> 
         where message.chatRoom.chatRoomId = :roomId
             and message.deletedAt is null
             and message.sender.userId <> :userId
+            and member.leftAt is null
             and (
                 member.lastReadMessage is null
                     or message.chatMessageId > member.lastReadMessage.chatMessageId

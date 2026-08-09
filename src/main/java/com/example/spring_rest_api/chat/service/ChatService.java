@@ -22,7 +22,6 @@ import com.example.spring_rest_api.user.repository.UserQueryRepository;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
-import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -40,7 +39,6 @@ public class ChatService {
     private final UserQueryRepository userRepository;
     private final ChatRoomAuthorizationService roomAuthorizationService;
     private final ChatUpdatePublisher updatePublisher;
-    private final ApplicationEventPublisher eventPublisher;
     private final ObjectMapper objectMapper;
     private final ChatOutboxRepository outboxRepository;
 
@@ -48,17 +46,21 @@ public class ChatService {
 
     @Transactional
     public ChatResponse sendText(Long senderId, Long roomId, ChatRequest request) {
-        String clientMessageId = request.getClientMessageId();
-        Optional<ChatMessage> messageOptional = messageRepository
-                .findBySender_UserIdAndClientMessageId(senderId, clientMessageId);
-        if (messageOptional.isPresent()) {
-            return ChatResponse.from(messageOptional.get());
-        }
-
         ChatRoom room = chatRoomRepository.findById(roomId)
                 .orElseThrow(() -> new NotFoundException("ROOM_NOT_FOUND"));
 
         roomAuthorizationService.validateParticipant(roomId, senderId);
+
+        String clientMessageId = request.getClientMessageId();
+        Optional<ChatMessage> messageOptional = messageRepository
+                .findBySender_UserIdAndChatRoom_ChatRoomIdAndClientMessageId(
+                        senderId,
+                        roomId,
+                        clientMessageId
+                );
+        if (messageOptional.isPresent()) {
+            return ChatResponse.from(messageOptional.get());
+        }
 
         User sender = userRepository.findByIdWithProfileImage(senderId)
                 .filter(u -> u.getDeletedAt() == null)
@@ -95,7 +97,7 @@ public class ChatService {
     }
 
     public void publishMessageUpdate(Long roomId, ChatResponse response) {
-        List<Long> userIds = memberRepository.findUser_UserIdsByChatRoom_ChatRoomId(roomId);
+        List<Long> userIds = memberRepository.findActiveUserIdsByChatRoomId(roomId);
 
         userIds.forEach(userId -> {
             Long unreadCount = messageRepository.countUnreadByRoomIdAndUserId(roomId, userId);

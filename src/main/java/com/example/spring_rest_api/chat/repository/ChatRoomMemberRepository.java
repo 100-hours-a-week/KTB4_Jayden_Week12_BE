@@ -20,8 +20,9 @@ public interface ChatRoomMemberRepository extends JpaRepository<ChatRoomMember, 
         select member.user.userId
         from ChatRoomMember member
         where member.chatRoom.chatRoomId = :chatRoomId
+            and member.leftAt is null
     """)
-    List<Long> findUser_UserIdsByChatRoom_ChatRoomId(Long chatRoomId);
+    List<Long> findActiveUserIdsByChatRoomId(Long chatRoomId);
 
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("""
