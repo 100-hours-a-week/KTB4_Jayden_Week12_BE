@@ -47,7 +47,7 @@ public class ChatRoomService {
         Optional<ChatRoom> roomOptional = chatRoomRepository.findByDirectKey(directKey);
 
         return roomOptional
-                .map(r -> findRoom(r, requestUser))
+                .map(r -> findRoom(r, requestUser, opponentUser))
                 .orElseGet(() -> createRoom(requestUser, opponentUser, directKey));
     }
 
@@ -57,7 +57,7 @@ public class ChatRoomService {
         ChatRoom room = chatRoomRepository.findById(roomId)
                 .orElseThrow(() -> new NotFoundException("ROOM_NOT_FOUND"));
 
-        List<Long> userIds = memberRepository.findUser_UserIdsByChatRoom_ChatRoomId(roomId);
+        List<Long> userIds = memberRepository.findActiveUserIdsByChatRoomId(roomId);
         Long opponentUserId = userIds.stream()
                 .filter(l -> !l.equals(userId))
                 .findFirst()
@@ -105,7 +105,7 @@ public class ChatRoomService {
                 String.format("%s:%s", opponentUserId, userId);
     }
 
-    private ChatRoomCreateOrGetResponse findRoom(ChatRoom room, User requestUser) {
+    private ChatRoomCreateOrGetResponse findRoom(ChatRoom room, User requestUser, User opponentUser) {
         memberRepository.findByChatRoom_ChatRoomIdAndUser_userId(
                         room.getChatRoomId(),
                         requestUser.getUserId()
@@ -113,7 +113,7 @@ public class ChatRoomService {
                 .filter(m -> m.getLeftAt() != null)
                 .ifPresent(ChatRoomMember::rejoin);
 
-        return ChatRoomCreateOrGetResponse.find(room, requestUser);
+        return ChatRoomCreateOrGetResponse.find(room, opponentUser);
     }
 
     private ChatRoomCreateOrGetResponse createRoom(User requestUser, User opponentUser, String directKey) {
