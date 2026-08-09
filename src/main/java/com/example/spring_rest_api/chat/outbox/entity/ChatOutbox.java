@@ -1,6 +1,5 @@
 package com.example.spring_rest_api.chat.outbox.entity;
 
-import com.example.spring_rest_api.common.exception.BadRequestException;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Getter;
@@ -73,72 +72,4 @@ public class ChatOutbox {
         outbox.createdAt = now;
         return outbox;
     }
-
-    public void markProcessing(String workerId, LocalDateTime lockedAt) {
-        if (!isPublishable()) {
-            throw new BadRequestException("발행할 수 없는 Outbox 상태입니다: " + status);
-        }
-        this.status = OutboxStatus.PROCESSING;
-        this.lockedBy = workerId;
-        this.lockedAt = lockedAt;
-    }
-
-    public void markPublished(int attemptUsed, LocalDateTime publishedAt) {
-        validateProcessing();
-        this.status = OutboxStatus.PUBLISHED;
-        this.attemptCount += attemptUsed;
-        this.publishedAt = publishedAt;
-
-        clearLock();
-        this.lastError = null;
-    }
-
-    public void markFailed(int attemptUsed, LocalDateTime nextRetryAt, String lastError) {
-        validateProcessing();
-
-        this.status = OutboxStatus.FAILED;
-        this.attemptCount += attemptUsed;
-        this.nextRetryAt = nextRetryAt;
-        this.lastError = truncate(lastError, 1000);
-
-        clearLock();
-    }
-
-    public void markDead(int attemptUsed, String lastError) {
-        validateProcessing();
-        this.status = OutboxStatus.DEAD;
-        this.attemptCount += attemptUsed;
-        this.lastError = truncate(lastError, 1000);
-
-        clearLock();
-    }
-
-    public boolean isPublishable() {
-        return status == OutboxStatus.PENDING
-                || status == OutboxStatus.FAILED
-                || status == OutboxStatus.PROCESSING;
-    }
-
-
-
-
-    private void validateProcessing() {
-        if (status != OutboxStatus.PROCESSING) {
-            throw new BadRequestException("PROCESSING 상태에서만 완료할 수 있습니다: " + status);
-        }
-    }
-
-    private void clearLock() {
-        this.lockedBy = null;
-        this.lockedAt = null;
-    }
-
-    private static String truncate(String value, int maxLength) {
-        if (value == null || value.length() <= maxLength) {
-            return value;
-        }
-        return value.substring(0, maxLength);
-    }
-
-
 }
