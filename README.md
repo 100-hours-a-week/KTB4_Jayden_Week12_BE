@@ -159,10 +159,10 @@ cp .env.example .env.prod
 | `DB_PASSWORD` | 운영 | DB 비밀번호 | Secret으로 설정 |
 | `DB_POOL_MAX_SIZE` | 운영 | Hikari 최대 연결 수 | `10` |
 | `DB_POOL_MIN_IDLE` | 운영 | Hikari 최소 유휴 연결 수 | `2` |
-| `REDIS_HOST` | 운영 | Redis 호스트 | 직접 설정 |
-| `REDIS_PORT` | 운영 | Redis 포트 | `6379` |
-| `REDIS_PASSWORD` | 운영 | Redis 비밀번호 | Secret으로 설정 |
-| `REDIS_SSL_ENABLED` | 운영 | Redis TLS 사용 여부 | `false` |
+| `REDIS_HOST` | 개발/직접 실행 | Redis 호스트 | 환경에 맞게 설정 |
+| `REDIS_PORT` | 개발/직접 실행 | Redis 포트 | `6379` |
+| `REDIS_PASSWORD` | 개발/직접 실행 | 외부 Redis 비밀번호 | 필요할 때만 설정 |
+| `REDIS_SSL_ENABLED` | 개발/직접 실행 | 외부 Redis TLS 사용 여부 | `false` |
 | `JWT_SECRET` | 전체 | JWT 서명 키 | 충분히 긴 무작위 값 |
 | `JWT_ACCESS_TOKEN_EXPIRATION` | 운영 | access token 만료 시간(초) | `180` |
 | `JWT_REFRESH_TOKEN_EXPIRATION` | 운영 | refresh token 만료 시간(초) | `12096000` |
@@ -348,20 +348,20 @@ Nginx만 `${HTTP_PORT:-80}`으로 노출되고 백엔드 8080 포트는 Compose 
 
 ### 운영 Compose
 
-운영 서버는 로컬 빌드 대신 Docker Hub 이미지를 받습니다.
+운영 서버는 로컬 빌드 대신 Docker Hub 이미지를 받고, Redis Pub/Sub은 동일한 Compose의 내부 Redis 서비스를 사용합니다. Redis 6379 포트는 호스트에 공개하지 않으며 백엔드만 `app-network`에서 접근합니다. 운영 Compose가 Redis 연결값을 `redis:6379`, 무비밀번호, TLS 비활성으로 고정하므로 `.env.prod`의 Redis 연결값은 사용하지 않습니다.
 
 ```bash
 docker compose --env-file .env.prod -f docker-compose.prod.yaml config --quiet
 docker compose --env-file .env.prod -f docker-compose.prod.yaml up -d
 ```
 
-기본 이미지는 `hobbyloop-backend:latest`와 `hobbyloop-frontend:latest`이며, 배포 시에는 `BACKEND_IMAGE` 또는 `FRONTEND_IMAGE`로 불변 SHA 태그를 주입합니다.
+기본 이미지는 `hobbyloop-backend:latest`와 `hobbyloop-frontend:latest`이며, 배포 시에는 `BACKEND_IMAGE` 또는 `FRONTEND_IMAGE`로 불변 SHA 태그를 주입합니다. 백엔드는 Redis healthcheck가 통과한 후 시작됩니다.
 
 ### CI/CD 흐름
 
 ```mermaid
 flowchart LR
-    P["Pull Request"] --> V["Gradle build + MySQL test"]
+    P["Pull Request"] --> V["MySQL + Redis Pub/Sub 검증 + Gradle build"]
     M["main push"] --> V
     V --> I["latest + sha-commit image publish"]
     I --> O["GitHub OIDC Role Assume"]
@@ -371,8 +371,8 @@ flowchart LR
     H -->|"실패"| R["직전 이미지 rollback"]
 ```
 
-- Pull Request는 검증만 수행합니다.
+- Pull Request는 MySQL·Redis 서비스와 Redis Pub/Sub 스모크 테스트를 포함한 검증만 수행합니다.
 - `main` push는 검증 후 Docker Hub에 `latest`와 `sha-${commit}` 이미지를 발행합니다.
 - deploy job은 GitHub OIDC로 AWS Role을 Assume하고 SSM을 통해 EC2의 `deploy-service.sh`를 실행합니다.
-- 배포 스크립트는 `flock`으로 동시 배포를 막고 새 컨테이너의 health를 확인합니다. 실패 시 직전 로컬 이미지로 롤백합니다.
+- 배포 스크립트는 `flock`으로 동시 배포를 막고 Redis health, 새 백엔드 health, `chat.message.v1`·`chat.user-update.v1` 구독 등록을 확인합니다. 백엔드 교체 후 검증에 실패하면 직전 로컬 이미지로 롤백합니다.
 - EC2에는 Docker Compose, AWS CLI, `flock`, `/opt/hobbyloop/.env.prod`와 Docker Hub pull 전용 SSM SecureString이 필요합니다.
