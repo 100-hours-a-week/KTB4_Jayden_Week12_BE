@@ -3,6 +3,7 @@ package com.example.spring_rest_api.chat.entity;
 import com.example.spring_rest_api.chat.service.response.ChatMessagesResponse;
 import com.example.spring_rest_api.chat.service.response.ChatResponse;
 import com.example.spring_rest_api.user.entity.User;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -10,6 +11,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 class ChatMessageTest {
 
     @Test
+    @DisplayName("요청의 clientMessageId가 실시간 응답과 히스토리 응답에 유지된다")
     void clientMessageIdFromRequestIsReturnedByLiveAndHistoryResponses() {
         ChatRoom room = ChatRoom.createDirect(1L, 2L, "1:2");
         User sender = User.create("sender@example.com", "password", "sender", null);
