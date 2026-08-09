@@ -36,6 +36,16 @@ jobs:
           --health-timeout=5s
           --health-retries=10
 
+      redis:
+        image: redis:7.4-alpine
+        ports:
+          - 6379:6379
+        options:
+          --health-cmd="redis-cli ping"
+          --health-interval=5s
+          --health-timeout=3s
+          --health-retries=10
+
     env:
       SPRING_PROFILES_ACTIVE: test,test-mysql
       TEST_DB_URL: jdbc:mysql://127.0.0.1:3306/hobbyloop_test?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=Asia/Seoul
