@@ -2,6 +2,7 @@ package com.example.spring_rest_api.common.config;
 
 import com.example.spring_rest_api.chat.interceptor.StompAuthenticationInterceptor;
 import com.example.spring_rest_api.chat.interceptor.StompAuthorizationInterceptor;
+import com.example.spring_rest_api.common.exception.StompErrorHandler;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.messaging.simp.config.ChannelRegistration;
@@ -16,9 +17,11 @@ import org.springframework.web.socket.config.annotation.WebSocketMessageBrokerCo
 public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
     private final StompAuthenticationInterceptor stompAuthenticationInterceptor;
     private final StompAuthorizationInterceptor stompAuthorizationInterceptor;
+    private final StompErrorHandler stompErrorHandler;
 
     @Override
     public void registerStompEndpoints(StompEndpointRegistry registry) {
+        registry.setErrorHandler(stompErrorHandler);
         registry.setPreserveReceiveOrder(true);
 
         registry.addEndpoint("/ws-chat")

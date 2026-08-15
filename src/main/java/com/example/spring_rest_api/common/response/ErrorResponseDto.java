@@ -9,12 +9,16 @@ public class ErrorResponseDto {
     private final String message;
     private final Object data;
 
-    private ErrorResponseDto(String message) {
+    private ErrorResponseDto(String message, Object data) {
         this.message = message;
-        this.data = null;
+        this.data = data;
     }
 
     public static ErrorResponseDto of(String message) {
-        return new ErrorResponseDto(message);
+        return new ErrorResponseDto(message, null);
+    }
+
+    public static ErrorResponseDto of(String message, Object data) {
+        return new ErrorResponseDto(message, data);
     }
 }
