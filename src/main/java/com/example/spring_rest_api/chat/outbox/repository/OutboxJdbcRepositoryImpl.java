@@ -25,8 +25,9 @@ public class OutboxJdbcRepositoryImpl implements OutboxJdbcRepository {
                             channel,
                             payload
                         FROM chat_outbox
-                        WHERE (
-                            status IN ('PENDING', 'FAILED')
+                        WHERE status = 'PENDING'
+                        OR (
+                            status = 'FAILED'
                             AND next_retry_at <= CURRENT_TIMESTAMP(6)
                         )
                         OR (
