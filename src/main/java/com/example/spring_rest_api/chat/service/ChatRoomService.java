@@ -73,11 +73,11 @@ public class ChatRoomService {
         );
     }
 
-    public List<ChatRoomListResponse> readAllInfiniteScroll(Long userId, LocalDateTime createdAtCursor, Long lastMessageId, int pageSize) {
+    public List<ChatRoomListResponse> readAllInfiniteScroll(Long userId, LocalDateTime createdAtCursor, Long lastMessageIdCursor, int pageSize) {
         return memberRepository.findChatRoomInfiniteScroll(
                 userId,
                 createdAtCursor,
-                lastMessageId,
+                lastMessageIdCursor,
                 pageSize
         );
     }

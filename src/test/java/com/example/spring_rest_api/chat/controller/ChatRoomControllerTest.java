@@ -5,6 +5,7 @@ import com.example.spring_rest_api.chat.service.ChatRoomService;
 import com.example.spring_rest_api.chat.service.response.ChatMessagesResponse;
 import com.example.spring_rest_api.chat.service.response.ChatRoomInfoResponse;
 import com.example.spring_rest_api.chat.service.response.ChatRoomListResponse;
+import com.example.spring_rest_api.common.exception.BadRequestException;
 import com.example.spring_rest_api.common.response.ApiResponse;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -12,15 +13,16 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 
 import java.time.LocalDateTime;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.BDDMockito.given;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 class ChatRoomControllerTest {
@@ -79,6 +81,25 @@ class ChatRoomControllerTest {
         assertThat(response.getBody().getData()).isSameAs(serviceResponse);
         verify(chatMessageService).readMessagesInfiniteScroll(1L, 10L, 100L, 20);
     }
+
+    @Test
+    @DisplayName("GET 채팅방 목록은 복합 커서 중 하나만 전달되면 400 예외를 발생시킨다")
+    void getRoomListRejectsPartialCursor() {
+        LocalDateTime createdAtCursor = LocalDateTime.of(2026, 8, 7, 10, 0);
+
+        assertThatThrownBy(() -> controller.readChatRoomInfiniteScroll(1L, createdAtCursor, null, 20))
+                .isInstanceOfSatisfying(BadRequestException.class, exception -> {
+                    assertThat(exception.getStatus()).isEqualTo(HttpStatus.BAD_REQUEST);
+                    assertThat(exception.getMessage()).isEqualTo("INVALID_CURSOR");
+                });
+        assertThatThrownBy(() -> controller.readChatRoomInfiniteScroll(1L, null, 100L, 20))
+                .isInstanceOfSatisfying(BadRequestException.class, exception -> {
+                    assertThat(exception.getStatus()).isEqualTo(HttpStatus.BAD_REQUEST);
+                    assertThat(exception.getMessage()).isEqualTo("INVALID_CURSOR");
+                });
+        verifyNoInteractions(chatRoomService);
+    }
+
 
     @Test
     @DisplayName("GET 전체 읽지 않은 메시지 수는 인증 사용자로 서비스를 호출한다")
