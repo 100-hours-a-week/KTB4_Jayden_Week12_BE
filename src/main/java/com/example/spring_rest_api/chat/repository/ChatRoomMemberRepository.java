@@ -24,6 +24,14 @@ public interface ChatRoomMemberRepository extends JpaRepository<ChatRoomMember, 
     """)
     List<Long> findActiveUserIdsByChatRoomId(Long chatRoomId);
 
+    @Query("""
+        select member.user.userId
+        from ChatRoomMember member
+        where member.chatRoom.chatRoomId = :chatRoomId
+            and member.user.userId <> :userId
+    """)
+    Optional<Long> findOpponentUserId(Long chatRoomId, Long userId);
+
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("""
         select member
@@ -49,11 +57,10 @@ public interface ChatRoomMemberRepository extends JpaRepository<ChatRoomMember, 
         join ChatRoomMember opponent
             on opponent.chatRoom = room
             and opponent.user.userId <> :userId
-            and opponent.leftAt is null
 
         left join opponent.user.profileImage profile
 
-        left join ChatMessage lastMessage
+        join ChatMessage lastMessage
             on lastMessage.chatRoom = room
             and not exists (
                 select 1

@@ -8,6 +8,7 @@ import com.example.spring_rest_api.chat.repository.ChatRoomRepository;
 import com.example.spring_rest_api.chat.service.request.ChatRoomCreateOrGetRequest;
 import com.example.spring_rest_api.chat.service.response.ChatRoomCreateOrGetResponse;
 import com.example.spring_rest_api.chat.service.response.ChatRoomInfoResponse;
+import com.example.spring_rest_api.common.exception.ForbiddenException;
 import com.example.spring_rest_api.common.exception.NotFoundException;
 import com.example.spring_rest_api.user.entity.User;
 import com.example.spring_rest_api.user.repository.UserQueryRepository;
@@ -147,8 +148,7 @@ class ChatRoomServiceTest {
         User opponent = user(2L);
         var lastMessage = message(100L, room, opponent);
         given(chatRoomRepository.findById(10L)).willReturn(Optional.of(room));
-        given(memberRepository.findActiveUserIdsByChatRoomId(10L))
-                .willReturn(List.of(1L, 2L));
+        given(memberRepository.findOpponentUserId(10L, 1L)).willReturn(Optional.of(2L));
         given(userQueryRepository.findByIdWithProfileImage(2L)).willReturn(Optional.of(opponent));
         given(messageRepository.findTopByChatRoom_ChatRoomIdOrderByChatMessageIdDesc(10L))
                 .willReturn(Optional.of(lastMessage));
@@ -169,8 +169,7 @@ class ChatRoomServiceTest {
         ChatRoom room = room(10L);
         User opponent = user(2L);
         given(chatRoomRepository.findById(10L)).willReturn(Optional.of(room));
-        given(memberRepository.findActiveUserIdsByChatRoomId(10L))
-                .willReturn(List.of(1L, 2L));
+        given(memberRepository.findOpponentUserId(10L, 1L)).willReturn(Optional.of(2L));
         given(userQueryRepository.findByIdWithProfileImage(2L)).willReturn(Optional.of(opponent));
         given(messageRepository.findTopByChatRoom_ChatRoomIdOrderByChatMessageIdDesc(10L))
                 .willReturn(Optional.empty());
@@ -179,6 +178,36 @@ class ChatRoomServiceTest {
 
         assertThat(response.getLastMessageId()).isNull();
         assertThat(response.getCreatedAt()).isNull();
+    }
+
+    @Test
+    @DisplayName("GET 활성 요청자는 퇴장한 상대방의 채팅방 정보도 조회한다")
+    void getRoomInfoReturnsLeftOpponent() {
+        ChatRoom room = room(10L);
+        User opponent = user(2L);
+        var lastMessage = message(100L, room, opponent);
+        given(chatRoomRepository.findById(10L)).willReturn(Optional.of(room));
+        given(memberRepository.findOpponentUserId(10L, 1L)).willReturn(Optional.of(2L));
+        given(userQueryRepository.findByIdWithProfileImage(2L)).willReturn(Optional.of(opponent));
+        given(messageRepository.findTopByChatRoom_ChatRoomIdOrderByChatMessageIdDesc(10L))
+                .willReturn(Optional.of(lastMessage));
+
+        ChatRoomInfoResponse response = chatRoomService.readInfo(1L, 10L);
+
+        assertThat(response.getChatRoomId()).isEqualTo(10L);
+        assertThat(response.getOpponentUserId()).isEqualTo(2L);
+        verify(memberRepository).findOpponentUserId(10L, 1L);
+    }
+
+    @Test
+    @DisplayName("GET 요청자가 퇴장한 채팅방은 권한 검증에서 조회를 중단한다")
+    void getRoomInfoThrowsWhenRequesterLeft() {
+        ForbiddenException exception = new ForbiddenException("해당 채팅방에 접근할 권한이 없습니다.");
+        doThrow(exception).when(authorizationService).validateParticipant(10L, 1L);
+
+        assertThatThrownBy(() -> chatRoomService.readInfo(1L, 10L))
+                .isSameAs(exception);
+        verifyNoInteractions(chatRoomRepository, memberRepository, userQueryRepository, messageRepository);
     }
 
     @Test
