@@ -108,18 +108,22 @@ class ChatRoomServiceTest {
     }
 
     @Test
-    @DisplayName("POST 기존 채팅방을 퇴장한 요청자가 다시 열면 요청자만 재입장한다")
-    void getExistingRoomRejoinsRequester() {
+    @DisplayName("POST 기존 채팅방을 다시 열면 퇴장한 요청자와 상대방이 재입장한다")
+    void getExistingRoomRejoinsMembers() {
         User requester = user(1L);
         User opponent = user(2L);
         ChatRoom room = room(10L);
         ChatRoomMember requesterMember = member(1L, room, requester);
+        ChatRoomMember opponentMember = member(2L, room, opponent);
         requesterMember.leave();
+        opponentMember.leave();
         given(userRepository.findById(1L)).willReturn(Optional.of(requester));
         given(userQueryRepository.findByIdWithProfileImage(2L)).willReturn(Optional.of(opponent));
         given(chatRoomRepository.findByDirectKey("1:2")).willReturn(Optional.of(room));
         given(memberRepository.findByChatRoom_ChatRoomIdAndUser_userId(10L, 1L))
                 .willReturn(Optional.of(requesterMember));
+        given(memberRepository.findByChatRoom_ChatRoomIdAndUser_userId(10L, 2L))
+                .willReturn(Optional.of(opponentMember));
 
         ChatRoomCreateOrGetResponse response =
                 chatRoomService.createOrGetDirectRoom(1L, roomRequest(2L));
@@ -127,7 +131,9 @@ class ChatRoomServiceTest {
         assertThat(response.isCreated()).isFalse();
         assertThat(response.getOpponentUserId()).isEqualTo(2L);
         assertThat(requesterMember.getLeftAt()).isNull();
+        assertThat(opponentMember.getLeftAt()).isNull();
         verify(memberRepository).findByChatRoom_ChatRoomIdAndUser_userId(10L, 1L);
+        verify(memberRepository).findByChatRoom_ChatRoomIdAndUser_userId(10L, 2L);
         verify(memberRepository, never()).save(any());
     }
 
