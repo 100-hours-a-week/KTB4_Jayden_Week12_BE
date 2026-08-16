@@ -4,7 +4,7 @@ import com.example.spring_rest_api.chat.service.ChatRoomAuthorizationService;
 import com.example.spring_rest_api.chat.util.ChatDestinationUtils;
 import com.example.spring_rest_api.common.exception.ForbiddenException;
 import com.example.spring_rest_api.common.exception.UnauthorizedException;
-import com.example.spring_rest_api.common.exception.WebSocketErrorSender;
+import com.example.spring_rest_api.common.exception.WebSocketErrorEventPublisher;
 import lombok.RequiredArgsConstructor;
 import org.springframework.messaging.Message;
 import org.springframework.messaging.MessageChannel;
@@ -20,7 +20,7 @@ import java.security.Principal;
 @RequiredArgsConstructor
 public class StompAuthorizationInterceptor implements ChannelInterceptor {
     private final ChatRoomAuthorizationService chatRoomAuthorizationService;
-    private final WebSocketErrorSender errorSender;
+    private final WebSocketErrorEventPublisher errorEventPublisher;
 
     @Override
     public Message<?> preSend(Message<?> message, MessageChannel channel) {
@@ -31,7 +31,7 @@ public class StompAuthorizationInterceptor implements ChannelInterceptor {
         }
 
         if (StompCommand.SUBSCRIBE.equals(accessor.getCommand())
-                && validateSubscription(accessor)) {
+                && !validateSubscription(accessor)) {
             return null;
         }
 
@@ -59,7 +59,7 @@ public class StompAuthorizationInterceptor implements ChannelInterceptor {
                 throw new NumberFormatException();
             }
         } catch (NumberFormatException e) {
-            errorSender.send(
+            errorEventPublisher.publish(
                     accessor,
                     "INVALID_SUBSCRIPTION_DESTINATION",
                     null
@@ -71,7 +71,7 @@ public class StompAuthorizationInterceptor implements ChannelInterceptor {
             chatRoomAuthorizationService.validateParticipant(roomId, userId);
             return true;
         } catch (ForbiddenException e) {
-            errorSender.send(
+            errorEventPublisher.publish(
                     accessor,
                     "CHAT_ROOM_ACCESS_DENIED",
                     roomId

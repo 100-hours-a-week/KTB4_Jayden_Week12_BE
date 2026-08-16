@@ -3,7 +3,7 @@ package com.example.spring_rest_api.chat.interceptor;
 import com.example.spring_rest_api.authorization.jwt.JwtProvider;
 import com.example.spring_rest_api.chat.principal.StompPrincipal;
 import com.example.spring_rest_api.chat.util.ChatDestinationUtils;
-import com.example.spring_rest_api.common.exception.WebSocketErrorSender;
+import com.example.spring_rest_api.common.exception.WebSocketErrorEventPublisher;
 import io.jsonwebtoken.JwtException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpHeaders;
@@ -20,7 +20,7 @@ import org.springframework.stereotype.Component;
 @RequiredArgsConstructor
 public class StompAuthenticationInterceptor implements ChannelInterceptor {
     private final JwtProvider jwtProvider;
-    private final WebSocketErrorSender errorSender;
+    private final WebSocketErrorEventPublisher errorEventPublisher;
 
     private static final String REAUTHENTICATION_DESTINATION = "/pub/auth/reauth";
 
@@ -67,7 +67,7 @@ public class StompAuthenticationInterceptor implements ChannelInterceptor {
         try {
             renewed = authenticate(accessor);
         } catch (MessageDeliveryException e) {
-            errorSender.send(
+            errorEventPublisher.publish(
                     accessor,
                     "INVALID_ACCESS_TOKEN",
                     null
@@ -76,7 +76,7 @@ public class StompAuthenticationInterceptor implements ChannelInterceptor {
         }
 
         if (!current.getUserId().equals(renewed.getUserId())) {
-            errorSender.send(
+            errorEventPublisher.publish(
                     accessor,
                     "REAUTH_USER_MISMATCH",
                     null
@@ -95,7 +95,7 @@ public class StompAuthenticationInterceptor implements ChannelInterceptor {
 
         if (principal.isExpired()) {
             Long roomId = ChatDestinationUtils.extractRoomId(accessor.getDestination());
-            errorSender.send(accessor, "ACCESS_TOKEN_EXPIRED", roomId);
+            errorEventPublisher.publish(accessor, "ACCESS_TOKEN_EXPIRED", roomId);
             return false;
         }
         return true;

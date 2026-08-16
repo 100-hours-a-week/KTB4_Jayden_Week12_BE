@@ -3,6 +3,7 @@ package com.example.spring_rest_api.chat.interceptor;
 import com.example.spring_rest_api.chat.principal.StompPrincipal;
 import com.example.spring_rest_api.chat.service.ChatRoomAuthorizationService;
 import com.example.spring_rest_api.common.exception.UnauthorizedException;
+import com.example.spring_rest_api.common.exception.WebSocketErrorEventPublisher;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -11,7 +12,6 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.messaging.Message;
 import org.springframework.messaging.MessageChannel;
-import org.springframework.messaging.MessageDeliveryException;
 import org.springframework.messaging.simp.stomp.StompCommand;
 import org.springframework.messaging.simp.stomp.StompHeaderAccessor;
 import org.springframework.messaging.support.MessageBuilder;
@@ -20,6 +20,9 @@ import java.time.Instant;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 
@@ -31,6 +34,9 @@ class StompAuthorizationInterceptorTest {
 
     @Mock
     ChatRoomAuthorizationService authorizationService;
+
+    @Mock
+    WebSocketErrorEventPublisher errorEventPublisher;
 
     @Mock
     MessageChannel channel;
@@ -55,7 +61,7 @@ class StompAuthorizationInterceptorTest {
 
         assertThatThrownBy(() -> interceptor.preSend(message, channel))
                 .isInstanceOf(UnauthorizedException.class)
-                .hasMessage("인증이 필요합니다.");
+                .hasMessage("WEBSOCKET_AUTH_REQUIRED");
         verifyNoInteractions(authorizationService);
     }
 
@@ -86,17 +92,20 @@ class StompAuthorizationInterceptorTest {
     }
 
     @Test
-    @DisplayName("숫자가 아닌 채팅방 ID로 SUBSCRIBE하면 메시징 예외로 거부한다")
-    void subscribeMalformedRoomIdThrowsMessageDeliveryException() {
+    @DisplayName("숫자가 아닌 채팅방 ID로 SUBSCRIBE하면 오류 이벤트를 발행하고 차단한다")
+    void subscribeMalformedRoomIdPublishesErrorAndReturnsNull() {
         Message<byte[]> message = message(
                 StompCommand.SUBSCRIBE,
                 "/sub/chatrooms/not-a-number",
                 new StompPrincipal(1L, Instant.now().plusSeconds(60))
         );
 
-        assertThatThrownBy(() -> interceptor.preSend(message, channel))
-                .isInstanceOf(MessageDeliveryException.class)
-                .hasMessage("유효하지 않은 채팅방 구독 경로입니다.");
+        assertThat(interceptor.preSend(message, channel)).isNull();
+        verify(errorEventPublisher).publish(
+                any(StompHeaderAccessor.class),
+                eq("INVALID_SUBSCRIPTION_DESTINATION"),
+                isNull()
+        );
         verifyNoInteractions(authorizationService);
     }
 
