@@ -35,15 +35,14 @@ jobs:
           --health-interval=10s
           --health-timeout=5s
           --health-retries=10
-
       redis:
         image: redis:7.4.10-alpine
         ports:
           - 6379:6379
         options:
           --health-cmd="redis-cli ping"
-          --health-interval=5s
-          --health-timeout=3s
+          --health-interval=10s
+          --health-timeout=5s
           --health-retries=10
 
     env:
@@ -51,6 +50,9 @@ jobs:
       TEST_DB_URL: jdbc:mysql://127.0.0.1:3306/hobbyloop_test?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=Asia/Seoul
       TEST_DB_USERNAME: test_user
       TEST_DB_PASSWORD: test_password
+      SPRING_DATA_REDIS_HOST: 127.0.0.1
+      SPRING_DATA_REDIS_PORT: '6379'
+      SPRING_DATA_REDIS_SSL_ENABLED: 'false'
 
     steps:
       - name: Checkout source
@@ -65,12 +67,69 @@ jobs:
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@90ddb51e90a5fd9ba75f40cf85156b7b41bf76a3 # v6
 
-      - name: Verify Redis service
+      - name: Verify Redis Pub/Sub
         env:
           REDIS_CONTAINER_ID: ${{ job.services.redis.id }}
         run: |
           set -euo pipefail
-          test "$(docker exec "$REDIS_CONTAINER_ID" redis-cli ping)" = "PONG"
+
+          channel="ci.pubsub.${GITHUB_RUN_ID}.${GITHUB_RUN_ATTEMPT}"
+          payload="redis-pubsub-${GITHUB_SHA}"
+          subscriber_output=$(mktemp)
+          subscriber_pid=''
+
+          cleanup() {
+            if [ -n "$subscriber_pid" ]; then
+              kill "$subscriber_pid" 2>/dev/null || true
+              wait "$subscriber_pid" 2>/dev/null || true
+            fi
+            rm -f "$subscriber_output"
+          }
+          trap cleanup EXIT
+
+          if [ "$(docker exec "$REDIS_CONTAINER_ID" redis-cli ping)" != "PONG" ]; then
+            echo "Redis PING failed." >&2
+            exit 1
+          fi
+
+          docker exec "$REDIS_CONTAINER_ID" redis-cli --raw SUBSCRIBE "$channel" \
+            > "$subscriber_output" &
+          subscriber_pid=$!
+
+          deadline=$((SECONDS + 10))
+          subscriber_count=0
+
+          while [ "$SECONDS" -lt "$deadline" ]; do
+            subscriber_count=$(docker exec "$REDIS_CONTAINER_ID" \
+              redis-cli --raw PUBSUB NUMSUB "$channel" | tail -n 1)
+            if [ "$subscriber_count" = "1" ]; then
+              break
+            fi
+            sleep 1
+          done
+
+          if [ "$subscriber_count" != "1" ]; then
+            echo "Redis subscriber was not registered in time." >&2
+            exit 1
+          fi
+
+          delivered_count=$(docker exec "$REDIS_CONTAINER_ID" \
+            redis-cli --raw PUBLISH "$channel" "$payload")
+          if [ "$delivered_count" != "1" ]; then
+            echo "Redis published to $delivered_count subscribers; expected 1." >&2
+            exit 1
+          fi
+
+          deadline=$((SECONDS + 10))
+          while [ "$SECONDS" -lt "$deadline" ]; do
+            if grep -Fxq "$payload" "$subscriber_output"; then
+              exit 0
+            fi
+            sleep 1
+          done
+
+          echo "Redis subscriber did not receive the published payload." >&2
+          exit 1
 
       - name: Build and test
         run: ./gradlew clean build --no-daemon

@@ -130,16 +130,51 @@ ensure_redis() {
         return 1
     fi
 
-    redis_container_id=$(compose ps -q redis)
-    if [ -z "$redis_container_id" ] || ! wait_until_healthy "$redis_container_id"; then
+    REDIS_CONTAINER_ID=$(compose ps -q redis)
+    if [ -z "$REDIS_CONTAINER_ID" ] || ! wait_until_healthy "$REDIS_CONTAINER_ID"; then
         echo "Redis container did not become healthy." >&2
         return 1
     fi
 
-    if [ "$(docker exec "$redis_container_id" redis-cli ping 2>/dev/null || true)" != "PONG" ]; then
+    if [ "$(docker exec "$REDIS_CONTAINER_ID" redis-cli ping 2>/dev/null || true)" != "PONG" ]; then
         echo "Redis PING failed." >&2
         return 1
     fi
+
+    return 0
+}
+
+redis_channel_subscriber_count() {
+    channel=$1
+    docker exec "$REDIS_CONTAINER_ID" \
+        redis-cli --raw PUBSUB NUMSUB "$channel" 2>/dev/null \
+        | tail -n 1
+}
+
+wait_until_backend_subscribed() {
+    elapsed=0
+
+    while [ "$elapsed" -lt "$HEALTH_TIMEOUT_SECONDS" ]; do
+        message_subscribers=$(redis_channel_subscriber_count 'chat.message.v1' || true)
+        update_subscribers=$(redis_channel_subscriber_count 'chat.user-update.v1' || true)
+
+        case "$message_subscribers:$update_subscribers" in
+            *[!0-9:]*|:*|*:)
+                ;;
+            *)
+                if [ "$message_subscribers" -ge 1 ] && [ "$update_subscribers" -ge 1 ]; then
+                    echo "Redis subscriptions are ready: chat.message.v1=$message_subscribers, chat.user-update.v1=$update_subscribers."
+                    return 0
+                fi
+                ;;
+        esac
+
+        sleep 5
+        elapsed=$((elapsed + 5))
+    done
+
+    echo "Backend Redis subscriptions were not registered in time." >&2
+    return 1
 }
 
 rollback() {
@@ -159,6 +194,11 @@ rollback() {
     rollback_container_id=$(compose ps -q "$SERVICE")
     if [ -z "$rollback_container_id" ] || ! wait_until_healthy "$rollback_container_id"; then
         echo "Rollback container did not become healthy." >&2
+        return 1
+    fi
+
+    if [ "$SERVICE" = "backend" ] && ! wait_until_backend_subscribed; then
+        echo "Rollback backend did not restore Redis subscriptions." >&2
         return 1
     fi
 
@@ -192,6 +232,11 @@ fi
 NEW_CONTAINER_ID=$(compose ps -q "$SERVICE")
 
 if [ -z "$NEW_CONTAINER_ID" ] || ! wait_until_healthy "$NEW_CONTAINER_ID"; then
+    rollback || true
+    exit 1
+fi
+
+if [ "$SERVICE" = "backend" ] && ! wait_until_backend_subscribed; then
     rollback || true
     exit 1
 fi
