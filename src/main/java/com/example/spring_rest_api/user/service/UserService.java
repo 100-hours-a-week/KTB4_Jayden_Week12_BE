@@ -125,6 +125,7 @@ public class UserService {
             throw new RequestConflictException("이미 삭제된 회원입니다.");
         }
 
+        userRepository.deleteRefreshTokensByUserId(userId);
         user.delete();
         return UserResponse.from(user);
     }

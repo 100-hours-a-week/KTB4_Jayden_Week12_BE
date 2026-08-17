@@ -77,6 +77,7 @@ public class AuthService {
         }
 
         User user = userRepository.findById(saved.getUserId())
+                .filter(foundUser -> foundUser.getDeletedAt() == null)
                 .orElseThrow(() -> new UnauthorizedException("UNAUTHORIZED"));
 
         String newAccessToken = jwtProvider.createAccessToken(
