@@ -2,6 +2,7 @@ package com.example.spring_rest_api.chat.interceptor;
 
 import com.example.spring_rest_api.authorization.jwt.JwtProvider;
 import com.example.spring_rest_api.chat.principal.StompPrincipal;
+import com.example.spring_rest_api.common.exception.WebSocketErrorEventPublisher;
 import io.jsonwebtoken.JwtException;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -32,6 +33,9 @@ class StompAuthenticationInterceptorTest {
 
     @Mock
     JwtProvider jwtProvider;
+
+    @Mock
+    WebSocketErrorEventPublisher errorEventPublisher;
 
     @Mock
     MessageChannel channel;
@@ -107,15 +111,14 @@ class StompAuthenticationInterceptorTest {
     }
 
     @Test
-    @DisplayName("만료된 Principal의 SUBSCRIBE를 거부한다")
-    void subscribeWithExpiredPrincipalThrowsException() {
+    @DisplayName("만료된 Principal의 SUBSCRIBE는 오류 이벤트를 발행하고 차단한다")
+    void subscribeWithExpiredPrincipalPublishesErrorAndReturnsNull() {
         StompPrincipal expired = new StompPrincipal(1L, Instant.now().minusSeconds(1));
-        Message<byte[]> subscribe =
-                message(accessor(StompCommand.SUBSCRIBE, "/sub/chatrooms/10", expired));
+        StompHeaderAccessor accessor = accessor(StompCommand.SUBSCRIBE, "/sub/chatrooms/10", expired);
+        Message<byte[]> subscribe = message(accessor);
 
-        assertThatThrownBy(() -> interceptor.preSend(subscribe, channel))
-                .isInstanceOf(MessageDeliveryException.class)
-                .hasMessage("WebSocket 액세스 토큰이 만료되었습니다.");
+        assertThat(interceptor.preSend(subscribe, channel)).isNull();
+        verify(errorEventPublisher).publish(accessor, "ACCESS_TOKEN_EXPIRED", 10L);
     }
 
     @Test
@@ -134,17 +137,16 @@ class StompAuthenticationInterceptorTest {
     }
 
     @Test
-    @DisplayName("다른 사용자의 토큰으로 재인증하면 기존 Principal을 유지하고 거부한다")
-    void reauthenticateDifferentUserThrowsException() {
+    @DisplayName("다른 사용자의 토큰으로 재인증하면 오류 이벤트를 발행하고 차단한다")
+    void reauthenticateDifferentUserPublishesErrorAndReturnsNull() {
         StompPrincipal current = new StompPrincipal(1L, Instant.now().plusSeconds(10));
         StompPrincipal anotherUser = new StompPrincipal(2L, Instant.now().plusSeconds(120));
         StompHeaderAccessor accessor = accessor(StompCommand.SEND, "/pub/auth/reauth", current);
         accessor.setNativeHeader(HttpHeaders.AUTHORIZATION, "Bearer another-token");
         given(jwtProvider.verifyAccessToken("another-token")).willReturn(anotherUser);
 
-        assertThatThrownBy(() -> interceptor.preSend(message(accessor), channel))
-                .isInstanceOf(MessageDeliveryException.class)
-                .hasMessage("다른 사용자의 토큰으로 재인증할 수 없습니다.");
+        assertThat(interceptor.preSend(message(accessor), channel)).isNull();
+        verify(errorEventPublisher).publish(accessor, "REAUTH_USER_MISMATCH", null);
         assertThat(accessor.getUser()).isSameAs(current);
     }
 

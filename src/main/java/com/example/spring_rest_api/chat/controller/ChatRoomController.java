@@ -7,6 +7,7 @@ import com.example.spring_rest_api.chat.service.response.ChatMessagesResponse;
 import com.example.spring_rest_api.chat.service.response.ChatRoomCreateOrGetResponse;
 import com.example.spring_rest_api.chat.service.response.ChatRoomInfoResponse;
 import com.example.spring_rest_api.chat.service.response.ChatRoomListResponse;
+import com.example.spring_rest_api.common.exception.BadRequestException;
 import com.example.spring_rest_api.common.response.ApiResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -59,12 +60,18 @@ public class ChatRoomController {
     public ResponseEntity<ApiResponse<List<ChatRoomListResponse>>> readChatRoomInfiniteScroll(
             @AuthenticationPrincipal Long userId,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime createdAtCursor,
-            @RequestParam(required = false) Long lastMessageId,
+            @RequestParam(required = false) Long lastMessageIdCursor,
             @RequestParam int pageSize
             ) {
+        boolean hasCreatedAtCursor = createdAtCursor != null;
+        boolean hasLastMessageIdCursor = lastMessageIdCursor != null;
+        if (hasCreatedAtCursor != hasLastMessageIdCursor) {
+            throw new BadRequestException("INVALID_CURSOR");
+        }
+
         return ResponseEntity.ok(ApiResponse.of(
                 "chat_room_list_read_success",
-                chatRoomService.readAllInfiniteScroll(userId, createdAtCursor, lastMessageId, pageSize)
+                chatRoomService.readAllInfiniteScroll(userId, createdAtCursor, lastMessageIdCursor, pageSize)
         ));
     }
 

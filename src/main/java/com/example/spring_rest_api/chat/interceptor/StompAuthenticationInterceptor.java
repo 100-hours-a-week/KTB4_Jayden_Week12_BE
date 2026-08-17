@@ -2,6 +2,8 @@ package com.example.spring_rest_api.chat.interceptor;
 
 import com.example.spring_rest_api.authorization.jwt.JwtProvider;
 import com.example.spring_rest_api.chat.principal.StompPrincipal;
+import com.example.spring_rest_api.chat.util.ChatDestinationUtils;
+import com.example.spring_rest_api.common.exception.WebSocketErrorEventPublisher;
 import io.jsonwebtoken.JwtException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpHeaders;
@@ -18,6 +20,7 @@ import org.springframework.stereotype.Component;
 @RequiredArgsConstructor
 public class StompAuthenticationInterceptor implements ChannelInterceptor {
     private final JwtProvider jwtProvider;
+    private final WebSocketErrorEventPublisher errorEventPublisher;
 
     private static final String REAUTHENTICATION_DESTINATION = "/pub/auth/reauth";
 
@@ -39,13 +42,15 @@ public class StompAuthenticationInterceptor implements ChannelInterceptor {
 
         if (StompCommand.SEND.equals(command)
                 && REAUTHENTICATION_DESTINATION.equals(accessor.getDestination())) {
-            reauthenticate(accessor);
-            return message;
+            return reauthenticate(accessor) ? message : null;
         }
 
         if (StompCommand.SEND.equals(command)
                 || StompCommand.SUBSCRIBE.equals(command)) {
-            validateSessionAuthentication(accessor);
+            if (!validateSessionAuthentication(accessor)) {
+                return null;
+            }
+
         }
 
         return message;
@@ -53,33 +58,51 @@ public class StompAuthenticationInterceptor implements ChannelInterceptor {
 
 
 
-    private void reauthenticate(StompHeaderAccessor accessor) {
+    private boolean reauthenticate(StompHeaderAccessor accessor) {
         if (!(accessor.getUser() instanceof StompPrincipal current)) {
             throw new MessageDeliveryException("인증된 WebSocket 세션이 아닙니다.");
         }
 
-        StompPrincipal renewed = authenticate(accessor);
+        StompPrincipal renewed;
+        try {
+            renewed = authenticate(accessor);
+        } catch (MessageDeliveryException e) {
+            errorEventPublisher.publish(
+                    accessor,
+                    "INVALID_ACCESS_TOKEN",
+                    null
+            );
+            return false;
+        }
 
         if (!current.getUserId().equals(renewed.getUserId())) {
-            throw new MessageDeliveryException("다른 사용자의 토큰으로 재인증할 수 없습니다.");
+            errorEventPublisher.publish(
+                    accessor,
+                    "REAUTH_USER_MISMATCH",
+                    null
+            );
+            return false;
         }
 
         accessor.setUser(renewed);
+        return true;
     }
 
-    private void validateSessionAuthentication(StompHeaderAccessor accessor) {
+    private boolean validateSessionAuthentication(StompHeaderAccessor accessor) {
         if (!(accessor.getUser() instanceof StompPrincipal principal)) {
             throw new MessageDeliveryException("WebSocket 인증이 필요합니다.");
         }
 
         if (principal.isExpired()) {
-            throw new MessageDeliveryException("WebSocket 액세스 토큰이 만료되었습니다.");
+            Long roomId = ChatDestinationUtils.extractRoomId(accessor.getDestination());
+            errorEventPublisher.publish(accessor, "ACCESS_TOKEN_EXPIRED", roomId);
+            return false;
         }
+        return true;
     }
 
     private StompPrincipal authenticate(StompHeaderAccessor accessor) {
-        String authorization =
-                accessor.getFirstNativeHeader(HttpHeaders.AUTHORIZATION);
+        String authorization = accessor.getFirstNativeHeader(HttpHeaders.AUTHORIZATION);
 
         if (authorization == null || !authorization.startsWith("Bearer ")) {
             throw new MessageDeliveryException("WebSocket 인증 토큰이 없습니다.");
