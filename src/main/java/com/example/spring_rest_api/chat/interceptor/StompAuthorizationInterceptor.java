@@ -19,7 +19,7 @@ import java.security.Principal;
 @Component
 @RequiredArgsConstructor
 public class StompAuthorizationInterceptor implements ChannelInterceptor {
-    private final ChatRoomAuthorizationService chatRoomAuthorizationService;
+    private final ChatRoomAuthorizationService authorizationService;
     private final WebSocketErrorEventPublisher errorEventPublisher;
 
     @Override
@@ -68,7 +68,7 @@ public class StompAuthorizationInterceptor implements ChannelInterceptor {
         }
 
         try {
-            chatRoomAuthorizationService.validateParticipant(roomId, userId);
+            authorizationService.validateParticipant(roomId, userId);
             return true;
         } catch (ForbiddenException e) {
             errorEventPublisher.publish(
